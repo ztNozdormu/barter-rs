@@ -188,6 +188,20 @@ impl<InstrumentId> DynamicStreams<InstrumentId> {
                             channels.tikers.entry(exchange).or_default().tx.clone(),
                         ));
                     }
+                    // (ExchangeId::BinanceFuturesUsd, SubKind::Tikers) => {
+                    //     tokio::spawn(consume::<BinanceFuturesUsd, Instrument, Tikers>(
+                    //         subs.into_iter()
+                    //             .map(|sub| {
+                    //                 Subscription::new(
+                    //                     BinanceFuturesUsd::default(),
+                    //                     sub.instrument,
+                    //                     Tikers,
+                    //                 )
+                    //             })
+                    //             .collect(),
+                    //         channels.tikers.entry(exchange).or_default().tx.clone(),
+                    //     ));
+                    // }
                     (ExchangeId::Bitfinex, SubKind::PublicTrades) => {
                         tokio::spawn(consume::<Bitfinex, Instrument, PublicTrades>(
                             subs.into_iter()
@@ -381,7 +395,7 @@ impl<InstrumentId> DynamicStreams<InstrumentId> {
                 .map(|(exchange, channel)| (exchange, UnboundedReceiverStream::new(channel.rx)))
                 .collect(),
             tikers: channels
-                .liquidations
+                .tikers
                 .into_iter()
                 .map(|(exchange, channel)| (exchange, UnboundedReceiverStream::new(channel.rx)))
                 .collect(),  
@@ -458,6 +472,24 @@ impl<InstrumentId> DynamicStreams<InstrumentId> {
         &mut self,
     ) -> SelectAll<UnboundedReceiverStream<MarketEvent<InstrumentId, Liquidation>>> {
         select_all(std::mem::take(&mut self.liquidations).into_values())
+    }
+
+      /// Remove an exchange [`Ticker`] `Stream` from the [`DynamicStreams`] collection.
+    ///
+    /// Note that calling this method will permanently remove this `Stream` from [`Self`].
+    pub fn select_tickers(
+        &mut self,
+        exchange: ExchangeId,
+    ) -> Option<UnboundedReceiverStream<MarketEvent<InstrumentId, Tiker>>> {
+        self.tikers.remove(&exchange)
+    }
+
+    /// Select and merge every exchange [`Ticker`] `Stream` using
+    /// [`SelectAll`](futures_util::stream::select_all).
+    pub fn select_all_tickers(
+        &mut self,
+    ) -> SelectAll<UnboundedReceiverStream<MarketEvent<InstrumentId, Tiker>>> {
+        select_all(std::mem::take(&mut self.tikers).into_values())
     }
 
     /// Select and merge every exchange `Stream` for every data type using

@@ -3,7 +3,7 @@ use super::{Binance, ExchangeServer};
 use crate::{
     exchange::{ExchangeId, StreamSelector},
     instrument::InstrumentData,
-    subscription::{book::OrderBooksL2, liquidation::Liquidations},
+    subscription::{book::OrderBooksL2, liquidation::Liquidations, tiker::Tikers},
     transformer::{book::MultiBookTransformer, stateless::StatelessTransformer},
     ExchangeWsStream,
 };
@@ -15,6 +15,8 @@ pub mod l2;
 
 /// Liquidation types.
 pub mod liquidation;
+/// Tiker types.
+pub mod tiker;
 
 /// [`BinanceFuturesUsd`] WebSocket server base url.
 ///
@@ -48,5 +50,13 @@ where
 {
     type Stream = ExchangeWsStream<
         StatelessTransformer<Self, Instrument::Id, Liquidations, BinanceLiquidation>,
+    >;
+}
+impl<Instrument> StreamSelector<Instrument, Tikers> for BinanceFuturesUsd
+where
+    Instrument: InstrumentData,
+{
+    type Stream = ExchangeWsStream<
+        StatelessTransformer<Self, Instrument::Id, Tikers, BinanceTiker>,
     >;
 }
