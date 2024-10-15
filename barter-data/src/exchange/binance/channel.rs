@@ -46,6 +46,18 @@ impl BinanceChannel {
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
     pub const LIQUIDATIONS: Self = Self("@forceOrder");
+
+    /// [`BinanceFuturesUsd`] liquidation orders channel name.
+    ///
+    /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
+    pub const TICKER: Self = Self("@ticker");
+
+    /// [`BinanceFuturesUsd`] liquidation orders channel name.
+    ///
+    /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
+    pub const KLINE: Self = Self("@kline");
+
+    
 }
 
 impl<Server, Instrument> Identifier<BinanceChannel>
