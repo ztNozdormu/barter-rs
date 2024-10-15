@@ -32,6 +32,9 @@ pub mod liquidation;
 /// Public trade [`SubscriptionKind`] and the associated Barter output data model.
 pub mod trade;
 
+/// Tiker [`SubscriptionKind`] and the associated Barter output data model.
+pub mod tiker;
+
 /// Defines the type of a [`Subscription`], and the output [`Self::Event`] that it yields.
 pub trait SubscriptionKind
 where

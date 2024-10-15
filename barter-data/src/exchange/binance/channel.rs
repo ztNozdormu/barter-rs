@@ -1,10 +1,7 @@
 use super::{futures::BinanceFuturesUsd, Binance};
 use crate::{
     subscription::{
-        book::{OrderBooksL1, OrderBooksL2},
-        liquidation::Liquidations,
-        trade::PublicTrades,
-        Subscription,
+        book::{OrderBooksL1, OrderBooksL2}, candle::{Candle, Candles}, liquidation::Liquidations, trade::PublicTrades, Subscription
     },
     Identifier,
 };
@@ -50,12 +47,12 @@ impl BinanceChannel {
     /// [`BinanceFuturesUsd`] liquidation orders channel name.
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
-    pub const TICKER: Self = Self("@ticker");
+    pub const TICKERS: Self = Self("@ticker");
 
     /// [`BinanceFuturesUsd`] liquidation orders channel name.
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
-    pub const KLINE: Self = Self("@kline");
+    pub const CANDLES: Self = Self("@kline");
 
     
 }
@@ -89,6 +86,14 @@ impl<Instrument> Identifier<BinanceChannel>
 {
     fn id(&self) -> BinanceChannel {
         BinanceChannel::LIQUIDATIONS
+    }
+}
+
+impl<Instrument> Identifier<BinanceChannel>
+    for Subscription<BinanceFuturesUsd, Instrument, Candles>
+{
+    fn id(&self) -> BinanceChannel {
+        BinanceChannel::CANDLES
     }
 }
 
