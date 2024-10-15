@@ -1,7 +1,7 @@
 use super::{futures::BinanceFuturesUsd, Binance};
 use crate::{
     subscription::{
-        book::{OrderBooksL1, OrderBooksL2}, candle::{Candle, Candles}, liquidation::Liquidations, trade::PublicTrades, Subscription
+        book::{OrderBooksL1, OrderBooksL2}, candle::{Candle, Candles}, liquidation::Liquidations, tiker::Tikers, trade::PublicTrades, Subscription
     },
     Identifier,
 };
@@ -94,6 +94,14 @@ impl<Instrument> Identifier<BinanceChannel>
 {
     fn id(&self) -> BinanceChannel {
         BinanceChannel::CANDLES
+    }
+}
+
+impl<Instrument> Identifier<BinanceChannel>
+    for Subscription<BinanceFuturesUsd, Instrument, Tikers>
+{
+    fn id(&self) -> BinanceChannel {
+        BinanceChannel::TICKERS
     }
 }
 
