@@ -21,10 +21,7 @@ use crate::{
     instrument::InstrumentData,
     streams::{builder::ExchangeChannel, consumer::consume},
     subscription::{
-        book::{OrderBook, OrderBookL1, OrderBooksL1},
-        liquidation::{Liquidation, Liquidations},
-        trade::{PublicTrade, PublicTrades},
-        SubKind, Subscription,
+        book::{OrderBook, OrderBookL1, OrderBooksL1}, liquidation::{Liquidation, Liquidations}, tiker::{self, Tiker, Tikers}, trade::{PublicTrade, PublicTrades}, SubKind, Subscription
     },
     Identifier,
 };
@@ -45,6 +42,8 @@ pub struct DynamicStreams<InstrumentId> {
     pub l2s: VecMap<ExchangeId, UnboundedReceiverStream<MarketEvent<InstrumentId, OrderBook>>>,
     pub liquidations:
         VecMap<ExchangeId, UnboundedReceiverStream<MarketEvent<InstrumentId, Liquidation>>>,
+    pub tikers:
+        VecMap<ExchangeId, UnboundedReceiverStream<MarketEvent<InstrumentId, Tiker>>>,
 }
 
 impl<InstrumentId> DynamicStreams<InstrumentId> {
@@ -72,6 +71,7 @@ impl<InstrumentId> DynamicStreams<InstrumentId> {
         Subscription<BinanceFuturesUsd, Instrument, PublicTrades>: Identifier<BinanceMarket>,
         Subscription<BinanceFuturesUsd, Instrument, OrderBooksL1>: Identifier<BinanceMarket>,
         Subscription<BinanceFuturesUsd, Instrument, Liquidations>: Identifier<BinanceMarket>,
+        Subscription<BinanceFuturesUsd, Instrument, Tikers>: Identifier<BinanceMarket>,
         Subscription<Bitfinex, Instrument, PublicTrades>: Identifier<BitfinexMarket>,
         Subscription<Bitmex, Instrument, PublicTrades>: Identifier<BitmexMarket>,
         Subscription<BybitSpot, Instrument, PublicTrades>: Identifier<BybitMarket>,
@@ -172,6 +172,20 @@ impl<InstrumentId> DynamicStreams<InstrumentId> {
                                 .or_default()
                                 .tx
                                 .clone(),
+                        ));
+                    }
+                    (ExchangeId::BinanceFuturesUsd, SubKind::Tikers) => {
+                        tokio::spawn(consume::<BinanceFuturesUsd, Instrument, Tikers>(
+                            subs.into_iter()
+                                .map(|sub| {
+                                    Subscription::new(
+                                        BinanceFuturesUsd::default(),
+                                        sub.instrument,
+                                        Tikers,
+                                    )
+                                })
+                                .collect(),
+                            channels.tikers.entry(exchange).or_default().tx.clone(),
                         ));
                     }
                     (ExchangeId::Bitfinex, SubKind::PublicTrades) => {
@@ -366,9 +380,14 @@ impl<InstrumentId> DynamicStreams<InstrumentId> {
                 .into_iter()
                 .map(|(exchange, channel)| (exchange, UnboundedReceiverStream::new(channel.rx)))
                 .collect(),
+            tikers: channels
+                .liquidations
+                .into_iter()
+                .map(|(exchange, channel)| (exchange, UnboundedReceiverStream::new(channel.rx)))
+                .collect(),  
         })
     }
-
+    // TODO impl tikers
     /// Remove an exchange [`PublicTrade`] `Stream` from the [`DynamicStreams`] collection.
     ///
     /// Note that calling this method will permanently remove this `Stream` from [`Self`].
@@ -454,12 +473,14 @@ impl<InstrumentId> DynamicStreams<InstrumentId> {
         MarketEvent<InstrumentId, OrderBookL1>: Into<Output>,
         MarketEvent<InstrumentId, OrderBook>: Into<Output>,
         MarketEvent<InstrumentId, Liquidation>: Into<Output>,
+        MarketEvent<InstrumentId, Tiker>: Into<Output>,
     {
         let Self {
             trades,
             l1s,
             l2s,
             liquidations,
+            tikers,
         } = self;
 
         let trades = trades
@@ -477,8 +498,12 @@ impl<InstrumentId> DynamicStreams<InstrumentId> {
         let liquidations = liquidations
             .into_values()
             .map(|stream| stream.map(MarketEvent::into).boxed());
+        
+        let tikers = tikers
+            .into_values()
+            .map(|stream| stream.map(MarketEvent::into).boxed());
 
-        let all = trades.chain(l1s).chain(l2s).chain(liquidations);
+        let all = trades.chain(l1s).chain(l2s).chain(liquidations).chain(tikers);
 
         select_all(all)
     }
@@ -517,6 +542,7 @@ struct Channels<InstrumentId> {
     l1s: HashMap<ExchangeId, ExchangeChannel<MarketEvent<InstrumentId, OrderBookL1>>>,
     l2s: HashMap<ExchangeId, ExchangeChannel<MarketEvent<InstrumentId, OrderBook>>>,
     liquidations: HashMap<ExchangeId, ExchangeChannel<MarketEvent<InstrumentId, Liquidation>>>,
+    tikers: HashMap<ExchangeId, ExchangeChannel<MarketEvent<InstrumentId, Tiker>>>,
 }
 
 impl<InstrumentId> Default for Channels<InstrumentId> {
@@ -526,6 +552,7 @@ impl<InstrumentId> Default for Channels<InstrumentId> {
             l1s: Default::default(),
             l2s: Default::default(),
             liquidations: Default::default(),
+            tikers: Default::default(),
         }
     }
 }
