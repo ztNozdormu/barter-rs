@@ -2,7 +2,7 @@ use super::SubscriptionKind;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-/// Barter [`Subscription`](super::Subscription) [`SubscriptionKind`] that yields [`Candle`]
+/// Barter [`Subscription`](super::Subscription) [`SubscriptionKind`] that yields [`Tiker`]
 /// [`MarketEvent<T>`](crate::event::MarketEvent) events.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
 pub struct Tikers;

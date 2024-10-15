@@ -64,6 +64,7 @@ pub enum SubKind {
     OrderBooksL3,
     Liquidations,
     Candles,
+    Tikers,
 }
 
 impl<Exchange, Instrument, Kind> Display for Subscription<Exchange, Instrument, Kind>
