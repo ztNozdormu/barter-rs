@@ -145,7 +145,7 @@ impl<InstrumentId> From<(ExchangeId, InstrumentId, BinanceTiker)>
 }
 
 /// Deserialize a [`BinanceTiker`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`]
-/// (eg/ "@tiker|BTCUSDT").
+/// (eg/ "BTCUSDT@tiker").
 pub fn de_tiker_subscription_id<'de, D>(deserializer: D) -> Result<SubscriptionId, D::Error>
 where
     D: serde::de::Deserializer<'de>,

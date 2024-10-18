@@ -1,10 +1,7 @@
 use crate::{
     error::DataError,
     subscription::{
-        book::{OrderBook, OrderBookL1},
-        candle::Candle,
-        liquidation::Liquidation,
-        trade::PublicTrade,
+        book::{OrderBook, OrderBookL1}, candle::Candle, liquidation::Liquidation, tiker::Tiker, trade::PublicTrade
     },
 };
 use barter_integration::model::{instrument::Instrument, Exchange};
@@ -63,6 +60,7 @@ pub enum DataKind {
     OrderBook(OrderBook),
     Candle(Candle),
     Liquidation(Liquidation),
+    Tiker(Tiker),
 }
 
 impl<InstrumentId> From<MarketEvent<InstrumentId, PublicTrade>>
@@ -129,6 +127,20 @@ impl<InstrumentId> From<MarketEvent<InstrumentId, Liquidation>>
             exchange: event.exchange,
             instrument: event.instrument,
             kind: DataKind::Liquidation(event.kind),
+        }
+    }
+}
+
+impl<InstrumentId> From<MarketEvent<InstrumentId, Tiker>>
+    for MarketEvent<InstrumentId, DataKind>
+{
+    fn from(event: MarketEvent<InstrumentId, Tiker>) -> Self {
+        Self {
+            exchange_time: event.exchange_time,
+            received_time: event.received_time,
+            exchange: event.exchange,
+            instrument: event.instrument,
+            kind: DataKind::Tiker(event.kind),
         }
     }
 }
