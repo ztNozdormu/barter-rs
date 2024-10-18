@@ -8,6 +8,7 @@ use crate::{
     ExchangeWsStream,
 };
 use barter_integration::model::instrument::Instrument;
+use tiker::BinanceTiker;
 
 /// Level 2 OrderBook types (top of book) and perpetual
 /// [`OrderBookUpdater`](crate::transformer::book::OrderBookUpdater) implementation.
