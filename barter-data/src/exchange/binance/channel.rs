@@ -5,6 +5,8 @@ use crate::{
         liquidation::Liquidations,
         trade::PublicTrades,
         Subscription,
+        candle::Candles,
+        tiker::Tikers
     },
     Identifier,
 };
@@ -46,6 +48,17 @@ impl BinanceChannel {
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
     pub const LIQUIDATIONS: Self = Self("@forceOrder");
+
+    /// [`BinanceFuturesUsd`] tiker channel name.
+    ///
+    /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
+    pub const TICKERS: Self = Self("@ticker");
+
+    /// [`BinanceFuturesUsd`] candle channel name.
+    ///
+    /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
+    pub const CANDLES: Self = Self("@kline");
+
 }
 
 impl<Server, Instrument> Identifier<BinanceChannel>
@@ -77,6 +90,22 @@ impl<Instrument> Identifier<BinanceChannel>
 {
     fn id(&self) -> BinanceChannel {
         BinanceChannel::LIQUIDATIONS
+    }
+}
+
+impl<Instrument> Identifier<BinanceChannel>
+    for Subscription<BinanceFuturesUsd, Instrument, Candles>
+{
+    fn id(&self) -> BinanceChannel {
+        BinanceChannel::CANDLES
+    }
+}
+
+impl<Instrument> Identifier<BinanceChannel>
+    for Subscription<BinanceFuturesUsd, Instrument, Tikers>
+{
+    fn id(&self) -> BinanceChannel {
+        BinanceChannel::TICKERS
     }
 }
 
