@@ -8,11 +8,12 @@ use crate::{
         StreamSelector,
     },
     instrument::InstrumentData,
-    subscription::{book::OrderBooksL2, liquidation::Liquidations},
+    subscription::{book::OrderBooksL2, liquidation::Liquidations, tiker::Tikers},
     transformer::stateless::StatelessTransformer,
     ExchangeWsStream, NoInitialSnapshots,
 };
 use barter_instrument::exchange::ExchangeId;
+use tiker::BinanceTiker;
 
 /// Level 2 OrderBook types.
 pub mod l2;
@@ -58,5 +59,15 @@ where
     type SnapFetcher = NoInitialSnapshots;
     type Stream = ExchangeWsStream<
         StatelessTransformer<Self, Instrument::Key, Liquidations, BinanceLiquidation>,
+    >;
+}
+
+impl<Instrument> StreamSelector<Instrument, Tikers> for BinanceFuturesUsd
+where
+    Instrument: InstrumentData,
+{
+    type SnapFetcher = NoInitialSnapshots;
+    type Stream = ExchangeWsStream<
+        StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTiker>,
     >;
 }

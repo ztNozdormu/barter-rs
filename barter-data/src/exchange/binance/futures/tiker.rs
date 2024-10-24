@@ -1,12 +1,9 @@
-use barter_integration::model::{Exchange, Side, SubscriptionId};
+use barter_integration::subscription::SubscriptionId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    event::{MarketEvent, MarketIter},
-    exchange::{binance::channel::BinanceChannel, ExchangeId, ExchangeSub},
-    subscription::{tiker::{self, Tiker}, trade::PublicTrade},
-    Identifier,
+    event::{MarketEvent, MarketIter}, exchange::{binance::channel::BinanceChannel, ExchangeId, ExchangeSub}, subscription::tiker::Tiker, Identifier
 };
 
 /// Binance real-time trade message.
@@ -108,14 +105,14 @@ impl Identifier<Option<SubscriptionId>> for BinanceTiker {
     }
 }
 
-impl<InstrumentId> From<(ExchangeId, InstrumentId, BinanceTiker)>
-    for MarketIter<InstrumentId, Tiker>
+impl<InstrumentKey> From<(ExchangeId, InstrumentKey, BinanceTiker)>
+    for MarketIter<InstrumentKey, Tiker>
 {
-    fn from((exchange_id, instrument, tiker): (ExchangeId, InstrumentId, BinanceTiker)) -> Self {
+    fn from((exchange_id, instrument, tiker): (ExchangeId, InstrumentKey, BinanceTiker)) -> Self {
         Self(vec![Ok(MarketEvent {
-            exchange_time: tiker.close_time,
-            received_time: Utc::now(),
-            exchange: Exchange::from(exchange_id),
+            time_exchange: tiker.close_time,
+            time_received: Utc::now(),
+            exchange: exchange_id,
             instrument,
             kind: Tiker {
                 price_change: tiker.price_change,
@@ -142,6 +139,7 @@ impl<InstrumentId> From<(ExchangeId, InstrumentId, BinanceTiker)>
         })])
     }
 }
+
 
 /// Deserialize a [`BinanceTiker`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`]
 /// (eg/ "BTCUSDT@tiker").

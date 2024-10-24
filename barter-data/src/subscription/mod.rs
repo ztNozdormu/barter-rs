@@ -59,6 +59,7 @@ pub enum SubKind {
     OrderBooksL3,
     Liquidations,
     Candles,
+    Tikers,
 }
 
 impl<Exchange, Instrument, Kind> std::fmt::Display for Subscription<Exchange, Instrument, Kind>

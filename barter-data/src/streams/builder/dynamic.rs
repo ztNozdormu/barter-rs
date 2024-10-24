@@ -22,10 +22,7 @@ use crate::{
         reconnect::stream::ReconnectingStream,
     },
     subscription::{
-        book::{OrderBookEvent, OrderBookL1, OrderBooksL1},
-        liquidation::{Liquidation, Liquidations},
-        trade::{PublicTrade, PublicTrades},
-        SubKind, Subscription,
+        book::{OrderBookEvent, OrderBookL1, OrderBooksL1}, liquidation::{Liquidation, Liquidations}, tiker::{Tiker, Tikers}, trade::{PublicTrade, PublicTrades}, SubKind, Subscription
     },
     Identifier,
 };
@@ -55,6 +52,8 @@ pub struct DynamicStreams<InstrumentKey> {
     >,
     pub liquidations:
         VecMap<ExchangeId, UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Liquidation>>>,
+    pub tikers:
+        VecMap<ExchangeId, UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Tiker>>>,
 }
 
 impl<InstrumentKey> DynamicStreams<InstrumentKey> {
@@ -82,6 +81,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
         Subscription<BinanceFuturesUsd, Instrument, PublicTrades>: Identifier<BinanceMarket>,
         Subscription<BinanceFuturesUsd, Instrument, OrderBooksL1>: Identifier<BinanceMarket>,
         Subscription<BinanceFuturesUsd, Instrument, Liquidations>: Identifier<BinanceMarket>,
+        Subscription<BinanceFuturesUsd, Instrument, Tikers>: Identifier<BinanceMarket>,
         Subscription<Bitfinex, Instrument, PublicTrades>: Identifier<BitfinexMarket>,
         Subscription<Bitmex, Instrument, PublicTrades>: Identifier<BitmexMarket>,
         Subscription<BybitSpot, Instrument, PublicTrades>: Identifier<BybitMarket>,
@@ -204,6 +204,24 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
                                     .await?
                                     .boxed()
                                     .forward_to(txs.liquidations.get(&exchange).unwrap().clone());
+                                    Ok(())
+                                }
+                                (ExchangeId::BinanceFuturesUsd, SubKind::Tikers) => {
+                                    init_market_stream(
+                                        STREAM_RECONNECTION_POLICY,
+                                        subs.into_iter()
+                                            .map(|sub| {
+                                                Subscription::<_, Instrument, _>::new(
+                                                    BinanceFuturesUsd::default(),
+                                                    sub.instrument,
+                                                    Tikers,
+                                                )
+                                            })
+                                            .collect(),
+                                    )
+                                    .await?
+                                    .boxed()
+                                    .forward_to(txs.tikers.get(&exchange).unwrap().clone());
                                     Ok(())
                                 }
                                 (ExchangeId::Bitfinex, SubKind::PublicTrades) => {
@@ -491,6 +509,12 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
                 .into_iter()
                 .map(|(exchange, rx)| (exchange, UnboundedReceiverStream::new(rx)))
                 .collect(),
+            tikers: channels
+                .rxs
+                .tikers
+                .into_iter()
+                .map(|(exchange, rx)| (exchange, UnboundedReceiverStream::new(rx)))
+                .collect(),    
         })
     }
 
@@ -566,6 +590,24 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
         select_all(std::mem::take(&mut self.liquidations).into_values())
     }
 
+    /// Remove an exchange [`Ticker`] `Stream` from the [`DynamicStreams`] collection.
+    ///
+    /// Note that calling this method will permanently remove this `Stream` from [`Self`].
+    pub fn select_tickers(
+        &mut self,
+        exchange: ExchangeId,
+    ) -> Option<UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Tiker>>> {
+        self.tikers.remove(&exchange)
+    }
+
+    /// Select and merge every exchange [`Ticker`] `Stream` using
+    /// [`SelectAll`](futures_util::stream::select_all).
+    pub fn select_all_tickers(
+        &mut self,
+    ) -> SelectAll<UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Tiker>>> {
+        select_all(std::mem::take(&mut self.tikers).into_values())
+    }
+
     /// Select and merge every exchange `Stream` for every data type using [`select_all`]
     ///
     /// Note that using [`MarketEvent<Instrument, DataKind>`] as the `Output` is suitable for most
@@ -578,12 +620,14 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
         MarketStreamResult<InstrumentKey, OrderBookL1>: Into<Output>,
         MarketStreamResult<InstrumentKey, OrderBookEvent>: Into<Output>,
         MarketStreamResult<InstrumentKey, Liquidation>: Into<Output>,
+        MarketStreamResult<InstrumentKey, Tiker>: Into<Output>,
     {
         let Self {
             trades,
             l1s,
             l2s,
             liquidations,
+            tikers,
         } = self;
 
         let trades = trades
@@ -602,7 +646,11 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
             .into_values()
             .map(|stream| stream.map(MarketStreamResult::into).boxed());
 
-        let all = trades.chain(l1s).chain(l2s).chain(liquidations);
+        let tikers = tikers
+            .into_values()
+            .map(|stream| stream.map(MarketStreamResult::into).boxed());
+
+        let all = trades.chain(l1s).chain(l2s).chain(liquidations).chain(tikers);
 
         select_all(all)
     }
@@ -700,6 +748,16 @@ where
                         rxs.liquidations.insert(sub.exchange, rx);
                     }
                 }
+                SubKind::Tikers => {
+                    if let (None, None) = (
+                        txs.tikers.get(&sub.exchange),
+                        rxs.tikers.get(&sub.exchange),
+                    ) {
+                        let (tx, rx) = mpsc::unbounded_channel();
+                        txs.tikers.insert(sub.exchange, tx);
+                        rxs.tikers.insert(sub.exchange, rx);
+                    }
+                }
                 unsupported => return Err(DataError::UnsupportedSubKind(unsupported)),
             }
         }
@@ -728,6 +786,10 @@ struct Txs<InstrumentKey> {
         ExchangeId,
         mpsc::UnboundedSender<MarketStreamResult<InstrumentKey, Liquidation>>,
     >,
+    tikers: FnvHashMap<
+        ExchangeId,
+        mpsc::UnboundedSender<MarketStreamResult<InstrumentKey, Tiker>>,
+    >,
 }
 
 impl<InstrumentKey> Default for Txs<InstrumentKey> {
@@ -737,6 +799,7 @@ impl<InstrumentKey> Default for Txs<InstrumentKey> {
             l1s: Default::default(),
             l2s: Default::default(),
             liquidations: Default::default(),
+            tikers: Default::default(),
         }
     }
 }
@@ -758,6 +821,10 @@ struct Rxs<InstrumentKey> {
         ExchangeId,
         mpsc::UnboundedReceiver<MarketStreamResult<InstrumentKey, Liquidation>>,
     >,
+    tikers: FnvHashMap<
+        ExchangeId,
+        mpsc::UnboundedReceiver<MarketStreamResult<InstrumentKey, Tiker>>,
+    >,
 }
 
 impl<InstrumentKey> Default for Rxs<InstrumentKey> {
@@ -767,6 +834,7 @@ impl<InstrumentKey> Default for Rxs<InstrumentKey> {
             l1s: Default::default(),
             l2s: Default::default(),
             liquidations: Default::default(),
+            tikers: Default::default(),
         }
     }
 }
