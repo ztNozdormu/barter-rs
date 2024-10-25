@@ -62,3 +62,5 @@ This software is for educational purposes only. Do not risk money which
 you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS
 AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
 
+## learn doc
+https://mp.weixin.qq.com/s/LktWfKfSU5-CgjRFeTh9iw 算法交易系统掌握三大经典模式
