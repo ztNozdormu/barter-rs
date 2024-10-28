@@ -1,63 +1,34 @@
 /*
 策略市场数据业务 TODO
 */
-use chrono::{DateTime, Local};
-use rand::Rng;
+
+use barter_data::subscription::candle::Candle;
+use barter_data::subscription::tiker::Tiker;
 use std::sync::{Arc, Mutex};
 use tokio::time::{sleep, Duration};
 use tokio::task;
 
-// 定义 Candle 结构体，类似于 Python 的 Candle 类
-#[derive(Debug, Clone)]
-struct Candle {
-    timestamp: DateTime<Local>,
-    open_price: f64,
-    close_price: f64,
-    high_price: f64,
-    low_price: f64,
-    volume: f64,
-}
-
-impl Candle {
-    fn new(open_price: f64) -> Self {
-        Self {
-            timestamp: Local::now(),
-            open_price,
-            close_price: open_price,
-            high_price: open_price,
-            low_price: open_price,
-            volume: 0.0,
-        }
-    }
-
-    fn update(&mut self, price: f64, volume: f64) {
-        self.close_price = price;
-        self.high_price = self.high_price.max(price);
-        self.low_price = self.low_price.min(price);
-        self.volume += volume;
-    }
-}
-
 // CandleManager 负责管理不同时间周期的蜡烛
-struct CandleManager {
+pub struct CandleManager {
+    // TODO 需要改造适应多周期多币种集合
     candles: Arc<Mutex<Vec<Candle>>>,
     current_candle: Arc<Mutex<Option<Candle>>>,
 }
 
 impl CandleManager {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            candles: Arc::new(Mutex::new(vec![])),
+            candles: Arc::new(Mutex::new(vec![])), // 获取市场实时数据 一般大多数据策略获取实时接口即可 如果要更多历史数据需要扩展该方法
             current_candle: Arc::new(Mutex::new(None)),
         }
     }
 
-    async fn update_candle(&self, price: f64, volume: f64) {
+    async fn update_candle(&self, tiker: Tiker) {
         let mut current = self.current_candle.lock().unwrap();
         if let Some(candle) = current.as_mut() {
-            candle.update(price, volume);
+            candle.update(tiker);
         } else {
-            *current = Some(Candle::new(price));
+            *current = Some(Candle::new(tiker));
         }
     }
 
@@ -75,8 +46,8 @@ impl CandleManager {
         for candle in candles.iter() {
             println!(
                 "Timestamp: {}, Open: {:.2}, Close: {:.2}, High: {:.2}, Low: {:.2}, Volume: {:.2}",
-                candle.timestamp, candle.open_price, candle.close_price,
-                candle.high_price, candle.low_price, candle.volume
+                candle.close_time, candle.open, candle.close,
+                candle.high, candle.low, candle.volume
             );
         }
     }
@@ -84,11 +55,11 @@ impl CandleManager {
 
 // ticker_event 用于模拟随机价格和交易量的生成
 async fn ticker_event(candle_manager: Arc<CandleManager>, interval: u64) {
-    let mut rng = rand::thread_rng();
+    // let mut rng = rand::thread_rng();
     loop {
-        let price = rng.gen_range(100.0..200.0);
-        let volume = rng.gen_range(1.0..10.0);
-        candle_manager.update_candle(price, volume).await;
+        // let price = Tiker{...};
+        // let volume = rng.gen_range(1.0..10.0);
+        // candle_manager.update_candle(price, volume).await;
         sleep(Duration::from_secs(interval)).await;
     }
 }

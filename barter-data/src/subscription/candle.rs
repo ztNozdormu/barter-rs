@@ -1,4 +1,4 @@
-use super::SubscriptionKind;
+use super::{tiker::Tiker, SubscriptionKind};
 use chrono::{DateTime, Utc};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
@@ -40,3 +40,28 @@ pub struct Candle {
     pub volume: f64,
     pub trade_count: u64,
 }
+
+impl Candle {
+
+    pub fn new(tiker: Tiker) -> Self {
+        Self {
+            close_time: tiker.close_time,
+            open : tiker.open,
+            high : tiker.high,
+            low : tiker.low,
+            close : tiker.last_price,
+            volume : tiker.volume,
+            trade_count : 0u64,
+        }
+    }
+    pub fn update(&mut self, tiker: Tiker) {
+        self.close_time = tiker.close_time;
+        self.open = tiker.open;
+        self.high = tiker.high;
+        self.low = tiker.low;
+        self.close = tiker.last_price;
+        self.volume = tiker.volume;
+        self.trade_count = 0u64;
+    }
+}
+

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 pub mod example;
 
 // Barter market data implementation.
-pub mod smdata;
+pub mod smdatafeed;
 
 /// May generate an advisory [`Signal`] as a result of analysing an input [`MarketEvent`].
 pub trait SignalGenerator {
