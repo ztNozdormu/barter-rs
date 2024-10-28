@@ -6,7 +6,9 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use ta::{indicators::RelativeStrengthIndex, Next};
-
+/**
+ * TODO 市场宏观策略 多空选币 市场指数 形态选币 
+ */
 /// Configuration for constructing a [`OverAllStrategy`] via the new() constructor method.
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct Config {
