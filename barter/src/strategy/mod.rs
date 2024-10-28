@@ -8,6 +8,9 @@ use std::collections::HashMap;
 /// Barter example RSI strategy [`SignalGenerator`] implementation.
 pub mod example;
 
+/// Barter ewo strategy [`SignalGenerator`] implementation.
+pub mod over_all_market;
+
 // Barter market data implementation.
 pub mod smdatafeed;
 

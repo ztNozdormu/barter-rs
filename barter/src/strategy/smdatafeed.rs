@@ -9,6 +9,7 @@ use tokio::time::{sleep, Duration};
 use tokio::task;
 
 // CandleManager 负责管理不同时间周期的蜡烛
+#[derive(Clone, Debug)]
 pub struct CandleManager {
     // TODO 需要改造适应多周期多币种集合
     candles: Arc<Mutex<Vec<Candle>>>,
@@ -16,7 +17,9 @@ pub struct CandleManager {
 }
 
 impl CandleManager {
-    pub fn new() -> Self {
+    pub fn init() -> Self {
+         // 从市场实时获取 TODO
+        //  let market_candles = self.candles.lock().unwrap();
         Self {
             candles: Arc::new(Mutex::new(vec![])), // 获取市场实时数据 一般大多数据策略获取实时接口即可 如果要更多历史数据需要扩展该方法
             current_candle: Arc::new(Mutex::new(None)),
@@ -74,7 +77,7 @@ async fn finalize_candles(candle_manager: Arc<CandleManager>, duration: u64) {
 
 #[tokio::main]
 async fn main() {
-    let candle_manager = Arc::new(CandleManager::new());
+    let candle_manager = Arc::new(CandleManager::init());
 
     // 启动 ticker 事件线程
     let cm_clone = Arc::clone(&candle_manager);
