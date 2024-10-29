@@ -44,6 +44,12 @@ pub mod subscription;
 /// [`BinanceFuturesUsd`](futures::BinanceFuturesUsd).
 pub mod trade;
 
+/// Public Exchange errors types
+pub mod errors;
+
+/// Public Exchange types
+pub mod model;
+
 /// Generic [`Binance<Server>`](Binance) exchange.
 ///
 /// ### Notes

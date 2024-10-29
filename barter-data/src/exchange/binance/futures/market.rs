@@ -21,12 +21,12 @@
 */
 
 use crate::util::{build_request, build_signed_request};
-use crate::futures::model::{
+use crate::exchange::binance::model::{
     AggTrades, BookTickers, KlineSummaries, KlineSummary, LiquidationOrders, MarkPrices,
     OpenInterest, OpenInterestHist, OrderBook, PriceStats, SymbolPrice, Tickers, Trades,
 };
-use crate::client::Client;
-use crate::errors::Result;
+// use barter_integration::protocol::http::rest::client::Client;
+use crate::exchange::binance::errors::Result;
 use std::collections::BTreeMap;
 use serde_json::Value;
 use crate::api::API;

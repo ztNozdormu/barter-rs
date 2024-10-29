@@ -37,6 +37,7 @@ reqwest = { workspace = true }
 
 # Error
 thiserror = { workspace = true }
+error-chain = { version = "0.12.4", default-features = false }
 
 # SerDe
 serde = { workspace = true, features = ["derive"] }
