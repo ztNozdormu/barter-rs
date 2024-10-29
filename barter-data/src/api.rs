@@ -1,57 +1,18 @@
-use crate::account::Account;
-use crate::client::Client;
-use crate::config::Config;
-use crate::futures::account::FuturesAccount;
-use crate::futures::general::FuturesGeneral;
-use crate::futures::market::FuturesMarket;
-use crate::futures::userstream::FuturesUserStream;
-use crate::general::General;
-use crate::market::Market;
-use crate::userstream::UserStream;
-use crate::savings::Savings;
+// use crate::account::Account;
+// use crate::client::Client;
+// use crate::config::Config;
+// use crate::futures::account::FuturesAccount;
+// use crate::futures::general::FuturesGeneral;
+// use crate::futures::market::FuturesMarket;
+// use crate::futures::userstream::FuturesUserStream;
+// use crate::general::General;
+// use crate::market::Market;
 
 #[allow(clippy::all)]
 pub enum API {
-    Spot(Spot),
-    Savings(Sapi),
     Futures(Futures),
 }
 
-/// Endpoint for production and test orders.
-///
-/// Orders issued to test are validated, but not sent into the matching engine.
-pub enum Spot {
-    Ping,
-    Time,
-    ExchangeInfo,
-    Depth,
-    Trades,
-    HistoricalTrades,
-    AggTrades,
-    Klines,
-    AvgPrice,
-    Ticker24hr,
-    Price,
-    BookTicker,
-    Order,
-    OrderTest,
-    OpenOrders,
-    AllOrders,
-    Oco,
-    OrderList,
-    AllOrderList,
-    OpenOrderList,
-    Account,
-    MyTrades,
-    UserDataStream,
-}
-
-pub enum Sapi {
-    AllCoins,
-    AssetDetail,
-    DepositAddress,
-    SpotFuturesTransfer,
-}
 
 pub enum Futures {
     Ping,
@@ -98,37 +59,6 @@ pub enum Futures {
 impl From<API> for String {
     fn from(item: API) -> Self {
         String::from(match item {
-            API::Spot(route) => match route {
-                Spot::Ping => "/api/v3/ping",
-                Spot::Time => "/api/v3/time",
-                Spot::ExchangeInfo => "/api/v3/exchangeInfo",
-                Spot::Depth => "/api/v3/depth",
-                Spot::Trades => "/api/v3/trades",
-                Spot::HistoricalTrades => "/api/v3/historicalTrades",
-                Spot::AggTrades => "/api/v3/aggTrades",
-                Spot::Klines => "/api/v3/klines",
-                Spot::AvgPrice => "/api/v3/avgPrice",
-                Spot::Ticker24hr => "/api/v3/ticker/24hr",
-                Spot::Price => "/api/v3/ticker/price",
-                Spot::BookTicker => "/api/v3/ticker/bookTicker",
-                Spot::Order => "/api/v3/order",
-                Spot::OrderTest => "/api/v3/order/test",
-                Spot::OpenOrders => "/api/v3/openOrders",
-                Spot::AllOrders => "/api/v3/allOrders",
-                Spot::Oco => "/api/v3/order/oco",
-                Spot::OrderList => "/api/v3/orderList",
-                Spot::AllOrderList => "/api/v3/allOrderList",
-                Spot::OpenOrderList => "/api/v3/openOrderList",
-                Spot::Account => "/api/v3/account",
-                Spot::MyTrades => "/api/v3/myTrades",
-                Spot::UserDataStream => "/api/v3/userDataStream",
-            },
-            API::Savings(route) => match route {
-                Sapi::AllCoins => "/sapi/v1/capital/config/getall",
-                Sapi::AssetDetail => "/sapi/v1/asset/assetDetail",
-                Sapi::DepositAddress => "/sapi/v1/capital/deposit/address",
-                Sapi::SpotFuturesTransfer => "/sapi/v1/futures/transfer",
-            },
             API::Futures(route) => match route {
                 Futures::Ping => "/fapi/v1/ping",
                 Futures::Time => "/fapi/v1/time",
@@ -181,50 +111,6 @@ pub trait Binance {
     ) -> Self;
 }
 
-impl Binance for General {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> General {
-        Self::new_with_config(api_key, secret_key, &Config::default())
-    }
-
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> General {
-        General {
-            client: Client::new(api_key, secret_key, config.rest_api_endpoint.clone()),
-        }
-    }
-}
-
-impl Binance for Account {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> Account {
-        Self::new_with_config(api_key, secret_key, &Config::default())
-    }
-
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> Account {
-        Account {
-            client: Client::new(api_key, secret_key, config.rest_api_endpoint.clone()),
-            recv_window: config.recv_window,
-        }
-    }
-}
-
-impl Binance for Savings {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> Self {
-        Self::new_with_config(api_key, secret_key, &Config::default())
-    }
-
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> Self {
-        Self {
-            client: Client::new(api_key, secret_key, config.rest_api_endpoint.clone()),
-            recv_window: config.recv_window,
-        }
-    }
-}
-
 impl Binance for Market {
     fn new(api_key: Option<String>, secret_key: Option<String>) -> Market {
         Self::new_with_config(api_key, secret_key, &Config::default())
@@ -240,96 +126,4 @@ impl Binance for Market {
     }
 }
 
-impl Binance for UserStream {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> UserStream {
-        Self::new_with_config(api_key, secret_key, &Config::default())
-    }
 
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> UserStream {
-        UserStream {
-            client: Client::new(api_key, secret_key, config.rest_api_endpoint.clone()),
-            recv_window: config.recv_window,
-        }
-    }
-}
-
-// *****************************************************
-//              Binance Futures API
-// *****************************************************
-
-impl Binance for FuturesGeneral {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> FuturesGeneral {
-        Self::new_with_config(api_key, secret_key, &Config::default())
-    }
-
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> FuturesGeneral {
-        FuturesGeneral {
-            client: Client::new(
-                api_key,
-                secret_key,
-                config.futures_rest_api_endpoint.clone(),
-            ),
-        }
-    }
-}
-
-impl Binance for FuturesMarket {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> FuturesMarket {
-        Self::new_with_config(api_key, secret_key, &Config::default())
-    }
-
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> FuturesMarket {
-        FuturesMarket {
-            client: Client::new(
-                api_key,
-                secret_key,
-                config.futures_rest_api_endpoint.clone(),
-            ),
-            recv_window: config.recv_window,
-        }
-    }
-}
-
-impl Binance for FuturesAccount {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> Self {
-        Self::new_with_config(api_key, secret_key, &Config::default())
-    }
-
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> Self {
-        Self {
-            client: Client::new(
-                api_key,
-                secret_key,
-                config.futures_rest_api_endpoint.clone(),
-            ),
-            recv_window: config.recv_window,
-        }
-    }
-}
-
-impl Binance for FuturesUserStream {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> FuturesUserStream {
-        Self::new_with_config(api_key, secret_key, &Config::default())
-    }
-
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> FuturesUserStream {
-        FuturesUserStream {
-            client: Client::new(
-                api_key,
-                secret_key,
-                config.futures_rest_api_endpoint.clone(),
-            ),
-            recv_window: config.recv_window,
-        }
-    }
-}
