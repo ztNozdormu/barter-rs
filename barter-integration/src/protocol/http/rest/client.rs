@@ -5,6 +5,7 @@ use crate::{
 };
 use bytes::Bytes;
 use chrono::Utc;
+use serde::de::DeserializeOwned;
 use std::borrow::Cow;
 
 /// Configurable REST client capable of executing signed [`RestRequest`]s. Use this when

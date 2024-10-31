@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
-use crate::exchange::binance::errors::{ErrorKind,Error,Result}
+use crate::exchange::errors::{ErrorKind,Error,Result};
 
 #[derive(Deserialize, Clone)]
 pub struct Empty {}

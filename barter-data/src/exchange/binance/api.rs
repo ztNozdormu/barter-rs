@@ -1,12 +1,15 @@
-// use crate::account::Account;
-// use crate::client::Client;
-// use crate::config::Config;
-// use crate::futures::account::FuturesAccount;
-// use crate::futures::general::FuturesGeneral;
-// use crate::futures::market::FuturesMarket;
-// use crate::futures::userstream::FuturesUserStream;
-// use crate::general::General;
-// use crate::market::Market;
+
+use std::borrow::Cow;
+
+use barter_integration::{error::SocketError, protocol::http::{rest::RestRequest, HttpParser}};
+use chrono::{DateTime, Utc};
+use reqwest::StatusCode;
+use serde::Deserialize;
+
+use crate::exchange::errors::ExecutionError;
+
+use super::model::KlineSummary;
+
 
 #[allow(clippy::all)]
 pub enum API {
@@ -104,26 +107,78 @@ impl From<API> for String {
     }
 }
 
-pub trait Binance {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> Self;
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> Self;
+
+
+// *****************************************************
+//              Binance Futures Data Fetch
+// *****************************************************
+
+pub struct BinanceSigner {
+   pub api_key: String,
+   pub secret: String,
 }
 
-impl Binance for Market {
-    fn new(api_key: Option<String>, secret_key: Option<String>) -> Market {
-        Self::new_with_config(api_key, secret_key, &Config::default())
-    }
+// Configuration required to sign every Ftx `RestRequest`
+struct BinanceSignConfig<'a> {
+    api_key: &'a str,
+    time: DateTime<Utc>,
+    method: reqwest::Method,
+    path: Cow<'static, str>,
+}
 
-    fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
-    ) -> Market {
-        Market {
-            client: Client::new(api_key, secret_key, config.rest_api_endpoint.clone()),
-            recv_window: config.recv_window,
+pub struct BinanceParser;
+
+impl HttpParser for BinanceParser {
+    type ApiError = serde_json::Value;
+    type OutputError = ExecutionError;
+
+    fn parse_api_error(&self, status: StatusCode, api_error: Self::ApiError) -> Self::OutputError {
+        // For simplicity, use serde_json::Value as Error and extract raw String for parsing
+        let error = api_error.to_string();
+
+        // Parse Ftx error message to determine custom ExecutionError variant
+        match error.as_str() {
+            message if message.contains("Invalid login credentials") => {
+                ExecutionError::Unauthorised(error)
+            }
+            _ => ExecutionError::Socket(SocketError::HttpResponse(status, error)),
         }
     }
 }
+
+// 市场数据对应模型定义
+pub struct FetchCandlesRequest;
+
+impl RestRequest for FetchCandlesRequest {
+    type Response = FetchCandlesResponse; // Define Response type
+    type QueryParams = (); // FetchBalances does not require any QueryParams
+    type Body = (); // FetchBalances does not require any Body
+
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed("/fapi/v1/klines")
+    }
+
+    fn method() -> reqwest::Method {
+        reqwest::Method::GET
+    }
+}
+
+
+#[derive(Deserialize)]
+#[allow(dead_code)]
+pub struct FetchCandlesResponse {
+    pub success: bool,
+    pub result: Vec<KlineSummary>,
+}
+
+
+
+// pub trait Binance {
+//     fn new(api_key: Option<String>, secret_key: Option<String>) -> Self;
+//     fn new_with_config(
+//         api_key: Option<String>, secret_key: Option<String>, config: &Config,
+//     ) -> Self;
+// }
+
 
 

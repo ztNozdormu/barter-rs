@@ -1,15 +1,17 @@
+use barter_integration::error::SocketError;
 use serde::Deserialize;
 use error_chain::error_chain;
+use thiserror::Error;
 
 #[derive(Debug, Deserialize)]
-pub struct BinanceContentError {
+pub struct ExchangeContentError {
     pub code: i16,
     pub msg: String,
 }
 
 error_chain! {
     errors {
-        BinanceError(response: BinanceContentError)
+        ExchangeError(response: ExchangeContentError)
 
         KlineValueMissingError(index: usize, name: &'static str) {
             description("invalid Vec for Kline"),
@@ -27,4 +29,13 @@ error_chain! {
         Tungstenite(tungstenite::Error);
         TimestampError(std::time::SystemTimeError);
     }
+}
+
+#[derive(Debug, Error)]
+pub enum ExecutionError {
+    #[error("request authorisation invalid: {0}")]
+    Unauthorised(String),
+
+    #[error("SocketError: {0}")]
+    Socket(#[from] SocketError),
 }

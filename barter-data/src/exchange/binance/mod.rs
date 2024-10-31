@@ -44,11 +44,17 @@ pub mod subscription;
 /// [`BinanceFuturesUsd`](futures::BinanceFuturesUsd).
 pub mod trade;
 
-/// Public Exchange errors types
-pub mod errors;
-
 /// Public Exchange types
 pub mod model;
+
+/// Config Exchange info
+pub mod config;
+
+/// Binance `Exchange` util.
+pub mod util;
+
+/// Binance `Exchange` Utilities for fetching market data apis.
+pub mod api;
 
 /// Generic [`Binance<Server>`](Binance) exchange.
 ///

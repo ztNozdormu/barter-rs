@@ -156,9 +156,6 @@ pub mod books;
 /// [`futures_usd`](exchange::binance::futures::l2::BinanceFuturesUsdOrderBooksL2Transformer).
 pub mod transformer;
 
-/// Utilities for fetching market data apis.
-pub mod api;
-
 /// Convenient type alias for an [`ExchangeStream`] utilising a tungstenite
 /// [`WebSocket`](barter_integration::protocol::websocket::WebSocket).
 pub type ExchangeWsStream<Transformer> = ExchangeStream<WebSocketParser, WsStream, Transformer>;
