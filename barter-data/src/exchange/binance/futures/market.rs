@@ -21,6 +21,7 @@
 */
 
 use crate::exchange::binance::api::{BinanceParser, BinanceSigner, FetchCandlesRequest, FetchCandlesResponse};
+use crate::exchange::binance::config::{self, Config};
 use crate::exchange::binance::model::{KlineSummaries, KlineSummary};
 use crate::exchange::errors::ExecutionError;
 use std::collections::BTreeMap;
@@ -70,7 +71,7 @@ impl FuturesMarket {
             parameters.insert("endTime".into(), format!("{}", et));
         }
 
-        // let request = build_request(parameters);
+        let request = build_request(parameters);
 
         // let data: Vec<Vec<Value>> = self
         //     .client
@@ -97,14 +98,21 @@ impl FuturesMarket {
         HexEncoder,
     );
 
-    
+    let config = Config::default();
+    let mut url: String = format!("{}{}", config.futures_rest_api_endpoint, request);
+    // if let Some(request) = request {
+    //     if !request.is_empty() {
+    //         url.push_str(format!("?{}", request).as_str());
+    //     }
+    // }
+
     // // Build RestClient with Ftx configuration
-    let rest_client = RestClient::new("https://ftx.com", request_signer, BinanceParser);
+    let rest_client = RestClient::new(url, request_signer, BinanceParser);
 
     // Fetch Result<FetchBalancesResponse, ExecutionError>
     let response: Result<(FetchCandlesResponse, barter_integration::metric::Metric), ExecutionError> = rest_client.execute(FetchCandlesRequest).await;
 
-    if FetchCandlesResponse == true {
+    if FetchCandlesResponse::success == true {
         let klines = KlineSummaries::AllKlineSummaries(
             FetchCandlesResponse::result.iter()
                 .map(|row| row.try_into())
