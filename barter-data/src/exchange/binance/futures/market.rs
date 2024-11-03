@@ -20,16 +20,15 @@
 - [ ] `Taker Buy/Sell Volume (MARKET_DATA)`
 */
 
-use crate::exchange::binance::api::{BinanceParser, BinanceSigner, FetchCandlesRequest, FetchCandlesResponse};
+use crate::exchange::binance::api::{BinanceParser, FetchCandlesRequest, RequestUnsinger};
 use crate::exchange::binance::config::{self, Config};
-use crate::exchange::binance::model::{KlineSummaries, KlineSummary};
-use crate::exchange::errors::ExecutionError;
+use crate::exchange::binance::model::KlineSummaries;
+use crate::exchange::binance::util::build_request;
+use crate::subscription::candle;
 use std::collections::BTreeMap;
-use barter_integration::protocol::http::private::encoder::HexEncoder;
-use barter_integration::protocol::http::private::RequestSigner;
 use barter_integration::protocol::http::rest::client::RestClient;
-use serde_json::Value;
-
+use barter_integration::protocol::http::rest::RestRequest;
+use crate::exchange::errors::{ErrorKind, Result};
 // TODO
 // Make enums for Strings
 // Add limit parameters to functions
@@ -70,56 +69,32 @@ impl FuturesMarket {
         if let Some(et) = end_time.into() {
             parameters.insert("endTime".into(), format!("{}", et));
         }
-
+       // 参数处理 
+       let config = Config::default();
         let request = build_request(parameters);
+        let fetch_candles_request = FetchCandlesRequest{
+            query_params: request
+        };
 
-        // let data: Vec<Vec<Value>> = self
-        //     .client
-        //     .get(API::Futures(Futures::Klines), Some(request))?;
+        let rug =RequestUnsinger {};
 
-        // let klines = KlineSummaries::AllKlineSummaries(
-        //     data.iter()
-        //         .map(|row| row.try_into())
-        //         .collect::<Result<Vec<KlineSummary>>>()?,
-        // );
-
-        // Ok(klines)
-
-            // HMAC-SHA256 encoded account API secret used for signing private http requests
-    // let mac: Hmac<sha2::Sha256> = Hmac::new_from_slice("api_secret".as_bytes()).unwrap();
-
-    // Build Ftx configured RequestSigner for signing http requests with hex encoding
-    let request_signer = RequestSigner::new(
-        BinanceSigner {
-            api_key: "api_key".to_string(),
-            secret: "secret".to_string(),
-        },
-        None,
-        HexEncoder,
-    );
-
-    let config = Config::default();
-    let mut url: String = format!("{}{}", config.futures_rest_api_endpoint, request);
-    // if let Some(request) = request {
-    //     if !request.is_empty() {
-    //         url.push_str(format!("?{}", request).as_str());
-    //     }
-    // }
-
-    // // Build RestClient with Ftx configuration
-    let rest_client = RestClient::new(url, request_signer, BinanceParser);
-
-    // Fetch Result<FetchBalancesResponse, ExecutionError>
-    let response: Result<(FetchCandlesResponse, barter_integration::metric::Metric), ExecutionError> = rest_client.execute(FetchCandlesRequest).await;
-
-    if FetchCandlesResponse::success == true {
-        let klines = KlineSummaries::AllKlineSummaries(
-            FetchCandlesResponse::result.iter()
-                .map(|row| row.try_into())
-                .collect::<Result<Vec<KlineSummary>>>()?,
-        );
-     return Ok(klines);
-    } 
-    Ok(())
+        // // Build RestClient with Ftx configuration
+        let rest_client = RestClient::new(config.futures_rest_api_endpoint, rug, BinanceParser);
+        let response = rest_client.execute(fetch_candles_request).await;
+        // Fetch Result<FetchBalancesResponse, ExecutionError>
+        match response {
+            Ok((data, metric)) => {
+                println!("Success: {:?}", data);
+                println!("Metric: {:?}", metric);
+                // let klines: KlineSummaries = KlineSummaries::AllKlineSummaries(
+                //     data.result.iter()
+                //         .map(|row| row.try_into())
+                //         .collect::<Result<Vec<KlineSummary>>>()?,
+                // );
+            Ok(KlineSummaries::AllKlineSummaries(data.result))
+            }
+            Err(e) => Err(ErrorKind::MarketError(e).into()),
+            // Err(e) => Err(),
+        }
   }
 }

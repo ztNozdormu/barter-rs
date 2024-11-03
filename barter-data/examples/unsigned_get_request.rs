@@ -14,67 +14,9 @@ use serde::Deserialize;
 use std::borrow::Cow;
 use thiserror::Error;
 
-struct FtxSigner {
-    api_key: String,
-}
+struct BinanceParser;
 
-// Configuration required to sign every Ftx `RestRequest`
-struct FtxSignConfig<'a> {
-    api_key: &'a str,
-    time: DateTime<Utc>,
-    method: reqwest::Method,
-    path: Cow<'static, str>,
-}
-
-impl Signer for FtxSigner {
-    type Config<'a>
-        = FtxSignConfig<'a>
-    where
-        Self: 'a;
-
-    fn config<'a, Request>(
-        &'a self,
-        request: Request,
-        _: &RequestBuilder,
-    ) -> Result<Self::Config<'a>, SocketError>
-    where
-        Request: RestRequest,
-    {
-        Ok(FtxSignConfig {
-            api_key: self.api_key.as_str(),
-            time: Utc::now(),
-            method: Request::method(),
-            path: request.path(),
-        })
-    }
-
-    fn add_bytes_to_sign<M>(mac: &mut M, config: &Self::Config<'_>)
-    where
-        M: Mac,
-    {
-        mac.update(config.time.to_string().as_bytes());
-        mac.update(config.method.as_str().as_bytes());
-        mac.update(config.path.as_bytes());
-    }
-
-    fn build_signed_request(
-        config: Self::Config<'_>,
-        builder: RequestBuilder,
-        signature: String,
-    ) -> Result<reqwest::Request, SocketError> {
-        // Add Ftx required Headers & build reqwest::Request
-        builder
-            .header("FTX-KEY", config.api_key)
-            .header("FTX-TS", &config.time.timestamp_millis().to_string())
-            .header("FTX-SIGN", &signature)
-            .build()
-            .map_err(SocketError::from)
-    }
-}
-
-struct FtxParser;
-
-impl HttpParser for FtxParser {
+impl HttpParser for BinanceParser {
     type ApiError = serde_json::Value;
     type OutputError = ExecutionError;
 
@@ -132,6 +74,11 @@ struct FtxBalance {
     total: f64,
 }
 
+struct RequestUnsinger {
+}
+impl  BuildStrategy for RequestUnsinger {
+    
+}
 /// See Barter-Execution for a comprehensive real-life example, as well as code you can use out of the
 /// box to execute trades on many exchanges.
 #[tokio::main]
@@ -140,17 +87,11 @@ async fn main() {
     let mac: Hmac<sha2::Sha256> = Hmac::new_from_slice("api_secret".as_bytes()).unwrap();
 
     // Build Ftx configured RequestSigner for signing http requests with hex encoding
-    let request_signer = RequestSigner::new(
-        FtxSigner {
-            api_key: "api_key".to_string(),
-        },
-        mac,
-        HexEncoder,
-    );
+    let request_signer = RequestUnsinger{};
 
     // Build RestClient with Ftx configuration
     let rest_client = RestClient::new("https://ftx.com", request_signer, FtxParser);
 
     // Fetch Result<FetchBalancesResponse, ExecutionError>
-    let _response: Result<(FetchBalancesResponse, barter_integration::metric::Metric), ExecutionError> = rest_client.execute(FetchBalancesRequest).await;
+    let _response = rest_client.execute(FetchBalancesRequest).await;
 }
