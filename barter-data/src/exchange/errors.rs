@@ -9,14 +9,25 @@ pub struct ExchangeContentError {
     pub msg: String,
 }
 
+#[derive(Debug, Error)]
+pub enum ExecutionError {
+    #[error("request authorisation invalid: {0}")]
+    Unauthorised(String),
+
+    #[error("SocketError: {0}")]
+    Socket(#[from] SocketError),
+}
+
 error_chain! {
     errors {
         ExchangeError(response: ExchangeContentError)
-
+  
         KlineValueMissingError(index: usize, name: &'static str) {
             description("invalid Vec for Kline"),
             display("{} at {} is missing", name, index),
         }
+
+        MarketError(response: ExecutionError)
      }
 
     foreign_links {
@@ -26,16 +37,9 @@ error_chain! {
         ParseFloatError(std::num::ParseFloatError);
         UrlParserError(url::ParseError);
         Json(serde_json::Error);
-        Tungstenite(tungstenite::Error);
+        // Tungstenite(tungstenite::Error);
         TimestampError(std::time::SystemTimeError);
     }
 }
 
-#[derive(Debug, Error)]
-pub enum ExecutionError {
-    #[error("request authorisation invalid: {0}")]
-    Unauthorised(String),
 
-    #[error("SocketError: {0}")]
-    Socket(#[from] SocketError),
-}

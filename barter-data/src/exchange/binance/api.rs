@@ -1,15 +1,16 @@
 
 use std::borrow::Cow;
 
-use barter_integration::{error::SocketError, protocol::http::{rest::RestRequest, HttpParser}};
+use barter_integration::{error::SocketError, protocol::http::{rest::RestRequest, BuildStrategy, HttpParser}};
 use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::exchange::errors::ExecutionError;
 
-use super::model::KlineSummary;
+use serde_json::Value;
 
+use super::{config::Config, futures::market::FuturesMarket, model::KlineSummary};
 
 #[allow(clippy::all)]
 pub enum API {
@@ -146,12 +147,41 @@ impl HttpParser for BinanceParser {
     }
 }
 
+
+pub struct RequestUnsinger {
+}
+impl  BuildStrategy for RequestUnsinger {
+    fn build<Request>(
+        &self,
+        request: Request,
+        builder: reqwest::RequestBuilder,
+    ) -> Result<reqwest::Request, SocketError>
+    where
+        Request: RestRequest {
+         // Add Ftx required Headers & build reqwest::Request
+         builder
+         .build()
+         .map_err(SocketError::from)
+    }
+}
+
 // 市场数据对应模型定义
-pub struct FetchCandlesRequest;
+pub struct FetchCandlesRequest{
+    pub(crate) query_params: String,
+}
+
+// #[derive(Serialize)]
+// pub struct FetchCandlesParams {
+//    symbol: String,
+//    interval: String,
+//    limit: Option<i32>,
+//    startTime: Option<String>,
+//    endTime: Option<String>,
+// }
 
 impl RestRequest for FetchCandlesRequest {
     type Response = FetchCandlesResponse; // Define Response type
-    type QueryParams = (); // FetchBalances does not require any QueryParams
+    type QueryParams = String; // FetchBalances does not require any QueryParams
     type Body = (); // FetchBalances does not require any Body
 
     fn path(&self) -> Cow<'static, str> {
@@ -161,10 +191,14 @@ impl RestRequest for FetchCandlesRequest {
     fn method() -> reqwest::Method {
         reqwest::Method::GET
     }
+    
+    fn query_params(&self) -> Option<&Self::QueryParams> {
+        Some(&self.query_params)
+    }
 }
 
 
-#[derive(Deserialize)]
+#[derive(Debug,Deserialize)]
 #[allow(dead_code)]
 pub struct FetchCandlesResponse {
     pub success: bool,
@@ -173,12 +207,29 @@ pub struct FetchCandlesResponse {
 
 
 
-// pub trait Binance {
-//     fn new(api_key: Option<String>, secret_key: Option<String>) -> Self;
-//     fn new_with_config(
-//         api_key: Option<String>, secret_key: Option<String>, config: &Config,
-//     ) -> Self;
-// }
+pub trait Binance {
+    fn new(api_key: Option<String>, secret_key: Option<String>) -> Self;
+    fn new_with_config(
+        api_key: Option<String>, secret_key: Option<String>, config: &Config,
+    ) -> Self;
+}
 
+impl Binance for FuturesMarket {
+    fn new(api_key: Option<String>, secret_key: Option<String>) -> FuturesMarket {
+        Self::new_with_config(api_key, secret_key, &Config::default())
+    }
 
+    fn new_with_config(
+        api_key: Option<String>, secret_key: Option<String>, config: &Config,
+    ) -> FuturesMarket {
+        FuturesMarket {
+            // client: Client::new(
+            //     api_key,
+            //     secret_key,
+            //     config.futures_rest_api_endpoint.clone(),
+            // ),
+            recv_window: config.recv_window,
+        }
+    }
+}
 
