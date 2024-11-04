@@ -89,7 +89,7 @@ impl FuturesMarket {
     // let mac: Hmac<sha2::Sha256> = Hmac::new_from_slice("api_secret".as_bytes()).unwrap();
 
     // Build Ftx configured RequestSigner for signing http requests with hex encoding
-    let request_signer = RequestSigner::new(
+    let request_signer: RequestSigner<BinanceSigner, Option<_>, HexEncoder> = RequestSigner::new(
         BinanceSigner {
             api_key: "api_key".to_string(),
             secret: "secret".to_string(),

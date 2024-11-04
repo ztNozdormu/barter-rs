@@ -152,5 +152,5 @@ async fn main() {
     let rest_client = RestClient::new("https://ftx.com", request_signer, FtxParser);
 
     // Fetch Result<FetchBalancesResponse, ExecutionError>
-    let _response = rest_client.execute(FetchBalancesRequest).await;
+    let _response: Result<(FetchBalancesResponse, barter_integration::metric::Metric), ExecutionError> = rest_client.execute(FetchBalancesRequest).await;
 }
