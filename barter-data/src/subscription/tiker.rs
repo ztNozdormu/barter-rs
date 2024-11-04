@@ -18,12 +18,10 @@ impl SubscriptionKind for Tikers {
 /// Normalised Barter OHLCV [`Tiker`] model.
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct Tiker {
-    
     pub price_change: f64,
     pub price_change_percent: f64,
     pub weighted_avg_price: f64,
     // pub prev_close_price: f64,
-
     pub last_qty: f64,
     // pub bid_price: f64,
     // pub bid_qty: f64,
@@ -39,7 +37,7 @@ pub struct Tiker {
 
     pub open_time: DateTime<Utc>,
     pub close_time: DateTime<Utc>,
-    pub  first_id: u64,
-    pub  last_id: u64,
-    pub  count: u64,
+    pub first_id: u64,
+    pub last_id: u64,
+    pub count: u64,
 }

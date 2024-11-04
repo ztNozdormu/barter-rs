@@ -74,11 +74,8 @@ struct FtxBalance {
     total: f64,
 }
 
-struct RequestUnsinger {
-}
-impl  BuildStrategy for RequestUnsinger {
-    
-}
+struct RequestUnsinger {}
+impl BuildStrategy for RequestUnsinger {}
 /// See Barter-Execution for a comprehensive real-life example, as well as code you can use out of the
 /// box to execute trades on many exchanges.
 #[tokio::main]
@@ -87,7 +84,7 @@ async fn main() {
     let mac: Hmac<sha2::Sha256> = Hmac::new_from_slice("api_secret".as_bytes()).unwrap();
 
     // Build Ftx configured RequestSigner for signing http requests with hex encoding
-    let request_signer = RequestUnsinger{};
+    let request_signer = RequestUnsinger {};
 
     // Build RestClient with Ftx configuration
     let rest_client = RestClient::new("https://ftx.com", request_signer, FtxParser);

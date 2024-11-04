@@ -1,0 +1,697 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'barter'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=barter"
+                ],
+                "filter": {
+                    "name": "barter",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'engine_with_historic_candles'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=engine_with_historic_candles",
+                    "--package=barter"
+                ],
+                "filter": {
+                    "name": "engine_with_historic_candles",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'engine_with_historic_candles'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=engine_with_historic_candles",
+                    "--package=barter"
+                ],
+                "filter": {
+                    "name": "engine_with_historic_candles",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'engine_with_live_trades'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=engine_with_live_trades",
+                    "--package=barter"
+                ],
+                "filter": {
+                    "name": "engine_with_live_trades",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'engine_with_live_trades'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=engine_with_live_trades",
+                    "--package=barter"
+                ],
+                "filter": {
+                    "name": "engine_with_live_trades",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'integration'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=integration",
+                    "--package=barter"
+                ],
+                "filter": {
+                    "name": "integration",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'barter_data'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "barter_data",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'dynamic_multi_stream_multi_exchange'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=dynamic_multi_stream_multi_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "dynamic_multi_stream_multi_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'dynamic_multi_stream_multi_exchange'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=dynamic_multi_stream_multi_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "dynamic_multi_stream_multi_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'multi_stream_multi_exchange'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=multi_stream_multi_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "multi_stream_multi_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'multi_stream_multi_exchange'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=multi_stream_multi_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "multi_stream_multi_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'order_books_l1_streams'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=order_books_l1_streams",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "order_books_l1_streams",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'order_books_l1_streams'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=order_books_l1_streams",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "order_books_l1_streams",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'order_books_l1_streams_multi_exchange'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=order_books_l1_streams_multi_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "order_books_l1_streams_multi_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'order_books_l1_streams_multi_exchange'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=order_books_l1_streams_multi_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "order_books_l1_streams_multi_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'order_books_l2_manager'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=order_books_l2_manager",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "order_books_l2_manager",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'order_books_l2_manager'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=order_books_l2_manager",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "order_books_l2_manager",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'order_books_l2_streams'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=order_books_l2_streams",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "order_books_l2_streams",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'order_books_l2_streams'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=order_books_l2_streams",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "order_books_l2_streams",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'public_futures_market_request'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=public_futures_market_request",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "public_futures_market_request",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'public_futures_market_request'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=public_futures_market_request",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "public_futures_market_request",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'public_trades_streams'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=public_trades_streams",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "public_trades_streams",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'public_trades_streams'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=public_trades_streams",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "public_trades_streams",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'public_trades_streams_multi_exchange'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=public_trades_streams_multi_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "public_trades_streams_multi_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'public_trades_streams_multi_exchange'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=public_trades_streams_multi_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "public_trades_streams_multi_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'tiker_stream_exchange'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=tiker_stream_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "tiker_stream_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'tiker_stream_exchange'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=tiker_stream_exchange",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "tiker_stream_exchange",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'unsigned_get_request'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=unsigned_get_request",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "unsigned_get_request",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'unsigned_get_request'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=unsigned_get_request",
+                    "--package=barter-data"
+                ],
+                "filter": {
+                    "name": "unsigned_get_request",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'barter_instrument'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=barter-instrument"
+                ],
+                "filter": {
+                    "name": "barter_instrument",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'barter_integration'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=barter-integration"
+                ],
+                "filter": {
+                    "name": "barter_integration",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'signed_get_request'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=signed_get_request",
+                    "--package=barter-integration"
+                ],
+                "filter": {
+                    "name": "signed_get_request",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'signed_get_request'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=signed_get_request",
+                    "--package=barter-integration"
+                ],
+                "filter": {
+                    "name": "signed_get_request",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'simple_websocket_integration'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=simple_websocket_integration",
+                    "--package=barter-integration"
+                ],
+                "filter": {
+                    "name": "simple_websocket_integration",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'simple_websocket_integration'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=simple_websocket_integration",
+                    "--package=barter-integration"
+                ],
+                "filter": {
+                    "name": "simple_websocket_integration",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'barter_execution'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=barter-execution"
+                ],
+                "filter": {
+                    "name": "barter_execution",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'simulated_exchange'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=simulated_exchange",
+                    "--package=barter-execution"
+                ],
+                "filter": {
+                    "name": "simulated_exchange",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

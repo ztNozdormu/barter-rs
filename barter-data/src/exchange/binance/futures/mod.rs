@@ -70,7 +70,6 @@ where
     Instrument: InstrumentData,
 {
     type SnapFetcher = NoInitialSnapshots;
-    type Stream = ExchangeWsStream<
-        StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTiker>,
-    >;
+    type Stream =
+        ExchangeWsStream<StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTiker>>;
 }

@@ -1,6 +1,6 @@
+use crate::exchange::errors::{Error, ErrorKind, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
-use crate::exchange::errors::{ErrorKind,Error,Result};
 
 #[derive(Deserialize, Clone)]
 pub struct Empty {}
@@ -1330,7 +1330,7 @@ pub struct DepositAddress {
 pub(crate) mod string_or_float {
     use std::fmt;
 
-    use serde::{de, Serializer, Deserialize, Deserializer};
+    use serde::{de, Deserialize, Deserializer, Serializer};
 
     pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -1367,7 +1367,7 @@ pub(crate) mod string_or_float {
 pub(crate) mod string_or_float_opt {
     use std::fmt;
 
-    use serde::{Serializer, Deserialize, Deserializer};
+    use serde::{Deserialize, Deserializer, Serializer};
 
     pub fn serialize<T, S>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -1391,16 +1391,16 @@ pub(crate) mod string_or_float_opt {
             Float(f64),
         }
 
-        Ok(Some(crate::exchange::binance::model::string_or_float::deserialize(
-            deserializer,
-        )?))
+        Ok(Some(
+            crate::exchange::binance::model::string_or_float::deserialize(deserializer)?,
+        ))
     }
 }
 
 pub(crate) mod string_or_bool {
     use std::fmt;
 
-    use serde::{de, Serializer, Deserialize, Deserializer};
+    use serde::{de, Deserialize, Deserializer, Serializer};
 
     pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where

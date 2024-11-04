@@ -42,16 +42,15 @@ pub struct Candle {
 }
 
 impl Candle {
-
     pub fn new(tiker: Tiker) -> Self {
         Self {
             close_time: tiker.close_time,
-            open : tiker.open,
-            high : tiker.high,
-            low : tiker.low,
-            close : tiker.last_price,
-            volume : tiker.volume,
-            trade_count : 0u64,
+            open: tiker.open,
+            high: tiker.high,
+            low: tiker.low,
+            close: tiker.last_price,
+            volume: tiker.volume,
+            trade_count: 0u64,
         }
     }
     pub fn update(&mut self, tiker: Tiker) {
@@ -64,4 +63,3 @@ impl Candle {
         self.trade_count = 0u64;
     }
 }
-

@@ -1,11 +1,13 @@
+use std::{borrow::Cow, collections::BTreeMap};
 
-use std::borrow::Cow;
-
-use barter_integration::{error::SocketError, protocol::http::{rest::RestRequest, BuildStrategy, HttpParser}};
+use barter_integration::{
+    error::SocketError,
+    protocol::http::{rest::RestRequest, BuildStrategy, HttpParser},
+};
 use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-
+use tracing::error;
 use crate::exchange::errors::ExecutionError;
 
 use serde_json::Value;
@@ -16,7 +18,6 @@ use super::{config::Config, futures::market::FuturesMarket, model::KlineSummary}
 pub enum API {
     Futures(Futures),
 }
-
 
 pub enum Futures {
     Ping,
@@ -108,15 +109,13 @@ impl From<API> for String {
     }
 }
 
-
-
 // *****************************************************
 //              Binance Futures Data Fetch
 // *****************************************************
 
 pub struct BinanceSigner {
-   pub api_key: String,
-   pub secret: String,
+    pub api_key: String,
+    pub secret: String,
 }
 
 // Configuration required to sign every Ftx `RestRequest`
@@ -129,9 +128,75 @@ struct BinanceSignConfig<'a> {
 
 pub struct BinanceParser;
 
+#[derive(Debug,Deserialize)]
+#[allow(dead_code)]
+pub struct FetchCandlesResponse {
+    // pub success: bool,
+    pub result: Vec<Vec<Value>>,
+    // pub result: Vec<KlineSummary>,
+}
+
 impl HttpParser for BinanceParser {
     type ApiError = serde_json::Value;
     type OutputError = ExecutionError;
+
+    fn parse<FetchCandlesResponse>(
+            &self,
+            status: StatusCode,
+            payload: &[u8],
+        ) -> Result<FetchCandlesResponse, Self::OutputError>
+        where
+        FetchCandlesResponse: serde::de::DeserializeOwned, {
+          let res = payload.json::<Vec<Vec<Value>>>()?;
+
+            // match status {
+            //     StatusCode::OK => Ok(payload.json::<T>()?),
+            //     StatusCode::INTERNAL_SERVER_ERROR => {
+            //         bail!("Internal Server Error");
+            //     }
+            //     StatusCode::SERVICE_UNAVAILABLE => {
+            //         bail!("Service Unavailable");
+            //     }
+            //     StatusCode::UNAUTHORIZED => {
+            //         bail!("Unauthorized");
+            //     }
+            //     StatusCode::BAD_REQUEST => {
+            //         let error: BinanceContentError = response.json()?;
+
+            //         Err(ErrorKind::BinanceError(error).into())
+            //     }
+            //     s => {
+            //         bail!(format!("Received response: {:?}", s));
+            //     }
+            // }
+
+           // Attempt to deserialise reqwest::Response bytes into Ok(Response)
+        let parse_ok_error = match serde_json::from_slice::<FetchCandlesResponse>(payload) {
+            Ok(response) => return Ok(response),
+            Err(serde_error) => serde_error,
+        };
+        println!("parse_ok_error: {}", parse_ok_error);
+        println!("payload: {:?}", payload.to_vec());
+        // Attempt to deserialise API Error if Ok(Response) deserialisation failed
+        let parse_api_error_error = match serde_json::from_slice::<Self::ApiError>(payload) {
+            Ok(api_error) => return Err(self.parse_api_error(status, api_error)),
+            Err(serde_error) => serde_error,
+        };
+   
+        // Log errors if failed to deserialise reqwest::Response into Response or API Self::Error
+        error!(
+            status_code = ?status,
+            ?parse_ok_error,
+            ?parse_api_error_error,
+            response_body = %String::from_utf8_lossy(payload),
+            "error deserializing HTTP response"
+        );
+
+        Err(Self::OutputError::from(SocketError::DeserialiseBinary {
+            error: parse_ok_error,
+            payload: payload.to_vec(),
+        }))
+    }
 
     fn parse_api_error(&self, status: StatusCode, api_error: Self::ApiError) -> Self::OutputError {
         // For simplicity, use serde_json::Value as Error and extract raw String for parsing
@@ -148,40 +213,51 @@ impl HttpParser for BinanceParser {
 }
 
 
-pub struct RequestUnsinger {
-}
-impl  BuildStrategy for RequestUnsinger {
+// fn handler<T: DeserializeOwned>(&self, response: Response) -> Result<T> {
+//     match response.status() {
+//         StatusCode::OK => Ok(response.json::<T>()?),
+//         StatusCode::INTERNAL_SERVER_ERROR => {
+//             bail!("Internal Server Error");
+//         }
+//         StatusCode::SERVICE_UNAVAILABLE => {
+//             bail!("Service Unavailable");
+//         }
+//         StatusCode::UNAUTHORIZED => {
+//             bail!("Unauthorized");
+//         }
+//         StatusCode::BAD_REQUEST => {
+//             let error: BinanceContentError = response.json()?;
+
+//             Err(ErrorKind::BinanceError(error).into())
+//         }
+//         s => {
+//             bail!(format!("Received response: {:?}", s));
+//         }
+//     }
+// }
+pub struct RequestUnsinger {}
+impl BuildStrategy for RequestUnsinger {
     fn build<Request>(
         &self,
         request: Request,
         builder: reqwest::RequestBuilder,
     ) -> Result<reqwest::Request, SocketError>
     where
-        Request: RestRequest {
-         // Add Ftx required Headers & build reqwest::Request
-         builder
-         .build()
-         .map_err(SocketError::from)
+        Request: RestRequest,
+    {
+        // Add Ftx required Headers & build reqwest::Request
+        builder.build().map_err(SocketError::from)
     }
 }
 
 // 市场数据对应模型定义
-pub struct FetchCandlesRequest{
-    pub(crate) query_params: String,
+pub struct FetchCandlesRequest {
+    pub(crate) query_params: BTreeMap<String, String>,
 }
-
-// #[derive(Serialize)]
-// pub struct FetchCandlesParams {
-//    symbol: String,
-//    interval: String,
-//    limit: Option<i32>,
-//    startTime: Option<String>,
-//    endTime: Option<String>,
-// }
 
 impl RestRequest for FetchCandlesRequest {
     type Response = FetchCandlesResponse; // Define Response type
-    type QueryParams = String; // FetchBalances does not require any QueryParams
+    type QueryParams = BTreeMap<String, String>; // FetchBalances does not require any QueryParams
     type Body = (); // FetchBalances does not require any Body
 
     fn path(&self) -> Cow<'static, str> {
@@ -191,18 +267,10 @@ impl RestRequest for FetchCandlesRequest {
     fn method() -> reqwest::Method {
         reqwest::Method::GET
     }
-    
+
     fn query_params(&self) -> Option<&Self::QueryParams> {
         Some(&self.query_params)
     }
-}
-
-
-#[derive(Debug,Deserialize)]
-#[allow(dead_code)]
-pub struct FetchCandlesResponse {
-    pub success: bool,
-    pub result: Vec<KlineSummary>,
 }
 
 
@@ -210,7 +278,9 @@ pub struct FetchCandlesResponse {
 pub trait Binance {
     fn new(api_key: Option<String>, secret_key: Option<String>) -> Self;
     fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
+        api_key: Option<String>,
+        secret_key: Option<String>,
+        config: &Config,
     ) -> Self;
 }
 
@@ -220,7 +290,9 @@ impl Binance for FuturesMarket {
     }
 
     fn new_with_config(
-        api_key: Option<String>, secret_key: Option<String>, config: &Config,
+        api_key: Option<String>,
+        secret_key: Option<String>,
+        config: &Config,
     ) -> FuturesMarket {
         FuturesMarket {
             // client: Client::new(
@@ -232,4 +304,3 @@ impl Binance for FuturesMarket {
         }
     }
 }
-

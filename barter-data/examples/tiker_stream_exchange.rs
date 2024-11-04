@@ -1,11 +1,7 @@
 use barter_data::{
-    exchange::
-        binance::futures::BinanceFuturesUsd
-    ,
+    exchange::binance::futures::BinanceFuturesUsd,
     streams::{reconnect::stream::ReconnectingStream, Streams},
-    subscription::
-        tiker::Tikers
-    ,
+    subscription::tiker::Tikers,
 };
 use barter_instrument::instrument::kind::InstrumentKind;
 use futures::StreamExt;

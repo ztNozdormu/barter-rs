@@ -2,11 +2,11 @@ use super::{futures::BinanceFuturesUsd, Binance};
 use crate::{
     subscription::{
         book::{OrderBooksL1, OrderBooksL2},
+        candle::Candles,
         liquidation::Liquidations,
+        tiker::Tikers,
         trade::PublicTrades,
         Subscription,
-        candle::Candles,
-        tiker::Tikers
     },
     Identifier,
 };
@@ -58,7 +58,6 @@ impl BinanceChannel {
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
     pub const CANDLES: Self = Self("@kline");
-
 }
 
 impl<Server, Instrument> Identifier<BinanceChannel>

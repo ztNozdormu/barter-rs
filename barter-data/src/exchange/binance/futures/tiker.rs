@@ -3,7 +3,10 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    event::{MarketEvent, MarketIter}, exchange::{binance::channel::BinanceChannel, ExchangeId, ExchangeSub}, subscription::tiker::Tiker, Identifier
+    event::{MarketEvent, MarketIter},
+    exchange::{binance::channel::BinanceChannel, ExchangeId, ExchangeSub},
+    subscription::tiker::Tiker,
+    Identifier,
 };
 
 /// Binance real-time trade message.
@@ -92,11 +95,11 @@ pub struct BinanceTiker {
     )]
     pub close_time: DateTime<Utc>,
     #[serde(alias = "F")]
-    pub  first_id: u64,
+    pub first_id: u64,
     #[serde(alias = "L")]
-    pub  last_id: u64,
+    pub last_id: u64,
     #[serde(alias = "n")]
-    pub  count: u64,
+    pub count: u64,
 }
 
 impl Identifier<Option<SubscriptionId>> for BinanceTiker {
@@ -140,7 +143,6 @@ impl<InstrumentKey> From<(ExchangeId, InstrumentKey, BinanceTiker)>
     }
 }
 
-
 /// Deserialize a [`BinanceTiker`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`]
 /// (eg/ "BTCUSDT@tiker").
 pub fn de_tiker_subscription_id<'de, D>(deserializer: D) -> Result<SubscriptionId, D::Error>
@@ -150,7 +152,6 @@ where
     <&str as Deserialize>::deserialize(deserializer)
         .map(|market| ExchangeSub::from((BinanceChannel::TICKERS, market)).id())
 }
-
 
 // #[cfg(test)]
 // mod tests {

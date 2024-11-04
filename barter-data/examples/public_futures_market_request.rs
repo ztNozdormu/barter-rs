@@ -1,4 +1,6 @@
-use barter_data::exchange::binance::{api::Binance, futures::market::FuturesMarket, model::KlineSummaries};
+use barter_data::exchange::binance::{
+    api::Binance, futures::market::FuturesMarket, model::KlineSummaries,
+};
 
 #[rustfmt::skip]
 #[tokio::main]
@@ -13,5 +15,4 @@ async fn market_data() {
         Ok(KlineSummaries::AllKlineSummaries(answer)) => println!("First kline: {:?}", answer[0]),
         Err(e) => println!("Error: {}", e),
     }
-
 }

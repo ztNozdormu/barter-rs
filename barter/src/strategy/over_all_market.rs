@@ -1,20 +1,22 @@
 use super::{smdatafeed::CandleManager, Decision, Signal, SignalGenerator, SignalStrength};
 use crate::data::MarketMeta;
-use barter_data::{event::{DataKind, MarketEvent}, subscription::candle};
+use barter_data::{
+    event::{DataKind, MarketEvent},
+    subscription::candle,
+};
 use barter_instrument::instrument::Instrument;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use ta::{indicators::RelativeStrengthIndex, Next};
 /**
- * TODO 市场宏观策略 多空选币 市场指数 形态选币 
+ * TODO 市场宏观策略 多空选币 市场指数 形态选币
  */
 /// Configuration for constructing a [`OverAllStrategy`] via the new() constructor method.
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct Config {
     pub rsi_period: usize,
 }
-
 
 #[derive(Clone, Debug)]
 /// ewo based strategy that implements [`SignalGenerator`].
@@ -61,7 +63,10 @@ impl OverAllStrategy {
         let rsi_indicator = RelativeStrengthIndex::new(config.rsi_period)
             .expect("Failed to construct RSI indicator");
         let candle_manager = CandleManager::init();
-        Self { rsi: rsi_indicator ,candle_manager}
+        Self {
+            rsi: rsi_indicator,
+            candle_manager,
+        }
     }
 
     /// Given the latest RSI value for a symbol, generates a map containing the [`SignalStrength`] for
@@ -78,7 +83,10 @@ impl OverAllStrategy {
             );
         }
         if rsi > 60.0 {
-            signals.insert(Decision::Short, OverAllStrategy::calculate_signal_strength());
+            signals.insert(
+                Decision::Short,
+                OverAllStrategy::calculate_signal_strength(),
+            );
         }
         if rsi < 40.0 {
             signals.insert(

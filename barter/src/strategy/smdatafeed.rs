@@ -2,11 +2,12 @@
 策略市场数据业务 TODO
 */
 
-use barter_data::subscription::candle::Candle;
-use barter_data::subscription::tiker::Tiker;
+use barter_data::subscription::{candle::Candle, tiker::Tiker};
 use std::sync::{Arc, Mutex};
-use tokio::time::{sleep, Duration};
-use tokio::task;
+use tokio::{
+    task,
+    time::{sleep, Duration},
+};
 
 // CandleManager 负责管理不同时间周期的蜡烛
 #[derive(Clone, Debug)]
@@ -18,7 +19,7 @@ pub struct CandleManager {
 
 impl CandleManager {
     pub fn init() -> Self {
-         // 从市场实时获取 TODO
+        // 从市场实时获取 TODO
         //  let market_candles = self.candles.lock().unwrap();
         Self {
             candles: Arc::new(Mutex::new(vec![])), // 获取市场实时数据 一般大多数据策略获取实时接口即可 如果要更多历史数据需要扩展该方法
@@ -49,8 +50,12 @@ impl CandleManager {
         for candle in candles.iter() {
             println!(
                 "Timestamp: {}, Open: {:.2}, Close: {:.2}, High: {:.2}, Low: {:.2}, Volume: {:.2}",
-                candle.close_time, candle.open, candle.close,
-                candle.high, candle.low, candle.volume
+                candle.close_time,
+                candle.open,
+                candle.close,
+                candle.high,
+                candle.low,
+                candle.volume
             );
         }
     }

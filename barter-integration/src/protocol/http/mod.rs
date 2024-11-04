@@ -65,7 +65,8 @@ pub trait HttpParser {
             Ok(api_error) => return Err(self.parse_api_error(status, api_error)),
             Err(serde_error) => serde_error,
         };
-
+        println!("parse_ok_error: {}", parse_ok_error);
+        println!("payload: {:?}", payload.to_vec());
         // Log errors if failed to deserialise reqwest::Response into Response or API Self::Error
         error!(
             status_code = ?status,

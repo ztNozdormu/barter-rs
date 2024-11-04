@@ -20,15 +20,20 @@
 - [ ] `Taker Buy/Sell Volume (MARKET_DATA)`
 */
 
-use crate::exchange::binance::api::{BinanceParser, FetchCandlesRequest, RequestUnsinger};
-use crate::exchange::binance::config::{self, Config};
-use crate::exchange::binance::model::KlineSummaries;
-use crate::exchange::binance::util::build_request;
-use crate::subscription::candle;
+use crate::{
+    exchange::{
+        binance::{
+            api::{BinanceParser, FetchCandlesRequest, RequestUnsinger},
+            config::{self, Config},
+            model::{KlineSummaries, KlineSummary},
+            util::build_request,
+        },
+        errors::{ErrorKind, Result},
+    },
+    subscription::candle,
+};
+use barter_integration::protocol::http::rest::{client::RestClient, RestRequest};
 use std::collections::BTreeMap;
-use barter_integration::protocol::http::rest::client::RestClient;
-use barter_integration::protocol::http::rest::RestRequest;
-use crate::exchange::errors::{ErrorKind, Result};
 // TODO
 // Make enums for Strings
 // Add limit parameters to functions
@@ -41,11 +46,15 @@ pub struct FuturesMarket {
 }
 
 impl FuturesMarket {
-  
     // Returns up to 'limit' klines for given symbol and interval ("1m", "5m", ...)
     // https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#klinecandlestick-data
-    pub async fn  get_klines<S1, S2, S3, S4, S5>(
-        &self, symbol: S1, interval: S2, limit: S3, start_time: S4, end_time: S5,
+    pub async fn get_klines<S1, S2, S3, S4, S5>(
+        &self,
+        symbol: S1,
+        interval: S2,
+        limit: S3,
+        start_time: S4,
+        end_time: S5,
     ) -> Result<KlineSummaries>
     where
         S1: Into<String>,
@@ -69,30 +78,33 @@ impl FuturesMarket {
         if let Some(et) = end_time.into() {
             parameters.insert("endTime".into(), format!("{}", et));
         }
-       // 参数处理 
-       let config = Config::default();
-        let request = build_request(parameters);
-        let fetch_candles_request = FetchCandlesRequest{
-            query_params: request
+        // 参数处理
+        let config = Config::default();
+        // let request = build_request(parameters);
+        let fetch_candles_request = FetchCandlesRequest {
+            query_params: parameters,
         };
-        let rug =RequestUnsinger {};
+        let rug = RequestUnsinger {};
         // // Build RestClient with Ftx configuration
         let rest_client = RestClient::new(config.futures_rest_api_endpoint, rug, BinanceParser);
-        let response = rest_client.execute(fetch_candles_request).await;
-        // Fetch Result<FetchBalancesResponse, ExecutionError>
+        let response: std::result::Result<(crate::exchange::binance::api::FetchCandlesResponse, barter_integration::metric::Metric), crate::exchange::errors::ExecutionError> = rest_client.execute(fetch_candles_request).await;
+        // println!("response: {:?}", response);
         match response {
             Ok((data, metric)) => {
                 println!("Success: {:?}", data);
                 println!("Metric: {:?}", metric);
-                // let klines: KlineSummaries = KlineSummaries::AllKlineSummaries(
-                //     data.result.iter()
-                //         .map(|row| row.try_into())
-                //         .collect::<Result<Vec<KlineSummary>>>()?,
-                // );
-            Ok(KlineSummaries::AllKlineSummaries(data.result))
+                let klines: KlineSummaries = KlineSummaries::AllKlineSummaries(
+                    data.result
+                        .iter()
+                        .map(|row| row.try_into())
+                        .collect::<Result<Vec<KlineSummary>>>()?,
+                );
+                Ok(klines)
             }
-            Err(e) => Err(ErrorKind::MarketError(e).into()),
-            // Err(e) => Err(),
+            Err(e) => {
+                println!("Errorm: {}", e);
+                Err(ErrorKind::MarketError(e).into())
+            }
         }
-  }
+    }
 }

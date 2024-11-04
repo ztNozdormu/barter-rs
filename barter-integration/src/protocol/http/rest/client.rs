@@ -83,7 +83,7 @@ where
         if let Some(body) = request.body() {
             builder = builder.json(body);
         }
-
+        // println!("builder: {:?}", builder);
         // Use RequestBuilder (public or private strategy) to build reqwest::Request
         self.strategy.build(request, builder)
     }
@@ -124,7 +124,6 @@ where
         // Extract Status Code & reqwest::Response Bytes
         let status_code = response.status();
         let payload = response.bytes().await?;
-
         Ok((status_code, payload, latency))
     }
 }

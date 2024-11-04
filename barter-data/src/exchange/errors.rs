@@ -1,6 +1,6 @@
 use barter_integration::error::SocketError;
-use serde::Deserialize;
 use error_chain::error_chain;
+use serde::Deserialize;
 use thiserror::Error;
 
 #[derive(Debug, Deserialize)]
@@ -21,7 +21,7 @@ pub enum ExecutionError {
 error_chain! {
     errors {
         ExchangeError(response: ExchangeContentError)
-  
+
         KlineValueMissingError(index: usize, name: &'static str) {
             description("invalid Vec for Kline"),
             display("{} at {} is missing", name, index),
@@ -41,5 +41,3 @@ error_chain! {
         TimestampError(std::time::SystemTimeError);
     }
 }
-
-

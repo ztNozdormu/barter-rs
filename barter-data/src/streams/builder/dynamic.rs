@@ -22,7 +22,11 @@ use crate::{
         reconnect::stream::ReconnectingStream,
     },
     subscription::{
-        book::{OrderBookEvent, OrderBookL1, OrderBooksL1}, liquidation::{Liquidation, Liquidations}, tiker::{Tiker, Tikers}, trade::{PublicTrade, PublicTrades}, SubKind, Subscription
+        book::{OrderBookEvent, OrderBookL1, OrderBooksL1},
+        liquidation::{Liquidation, Liquidations},
+        tiker::{Tiker, Tikers},
+        trade::{PublicTrade, PublicTrades},
+        SubKind, Subscription,
     },
     Identifier,
 };
@@ -514,7 +518,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
                 .tikers
                 .into_iter()
                 .map(|(exchange, rx)| (exchange, UnboundedReceiverStream::new(rx)))
-                .collect(),    
+                .collect(),
         })
     }
 
@@ -650,7 +654,11 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
             .into_values()
             .map(|stream| stream.map(MarketStreamResult::into).boxed());
 
-        let all = trades.chain(l1s).chain(l2s).chain(liquidations).chain(tikers);
+        let all = trades
+            .chain(l1s)
+            .chain(l2s)
+            .chain(liquidations)
+            .chain(tikers);
 
         select_all(all)
     }
@@ -749,10 +757,9 @@ where
                     }
                 }
                 SubKind::Tikers => {
-                    if let (None, None) = (
-                        txs.tikers.get(&sub.exchange),
-                        rxs.tikers.get(&sub.exchange),
-                    ) {
+                    if let (None, None) =
+                        (txs.tikers.get(&sub.exchange), rxs.tikers.get(&sub.exchange))
+                    {
                         let (tx, rx) = mpsc::unbounded_channel();
                         txs.tikers.insert(sub.exchange, tx);
                         rxs.tikers.insert(sub.exchange, rx);
@@ -786,10 +793,7 @@ struct Txs<InstrumentKey> {
         ExchangeId,
         mpsc::UnboundedSender<MarketStreamResult<InstrumentKey, Liquidation>>,
     >,
-    tikers: FnvHashMap<
-        ExchangeId,
-        mpsc::UnboundedSender<MarketStreamResult<InstrumentKey, Tiker>>,
-    >,
+    tikers: FnvHashMap<ExchangeId, mpsc::UnboundedSender<MarketStreamResult<InstrumentKey, Tiker>>>,
 }
 
 impl<InstrumentKey> Default for Txs<InstrumentKey> {
@@ -821,10 +825,8 @@ struct Rxs<InstrumentKey> {
         ExchangeId,
         mpsc::UnboundedReceiver<MarketStreamResult<InstrumentKey, Liquidation>>,
     >,
-    tikers: FnvHashMap<
-        ExchangeId,
-        mpsc::UnboundedReceiver<MarketStreamResult<InstrumentKey, Tiker>>,
-    >,
+    tikers:
+        FnvHashMap<ExchangeId, mpsc::UnboundedReceiver<MarketStreamResult<InstrumentKey, Tiker>>>,
 }
 
 impl<InstrumentKey> Default for Rxs<InstrumentKey> {
