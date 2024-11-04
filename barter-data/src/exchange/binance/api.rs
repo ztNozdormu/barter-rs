@@ -6,7 +6,7 @@ use barter_integration::{
 };
 use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tracing::error;
 use crate::exchange::errors::ExecutionError;
 
@@ -128,55 +128,39 @@ struct BinanceSignConfig<'a> {
 
 pub struct BinanceParser;
 
-#[derive(Debug,Deserialize)]
+#[derive(Deserialize)]
 #[allow(dead_code)]
-pub struct FetchCandlesResponse {
-    // pub success: bool,
+pub struct FetchCandlesResponse
+{
     pub result: Vec<Vec<Value>>,
-    // pub result: Vec<KlineSummary>,
 }
 
 impl HttpParser for BinanceParser {
     type ApiError = serde_json::Value;
     type OutputError = ExecutionError;
 
-    fn parse<FetchCandlesResponse>(
+    fn parse<re>(
             &self,
             status: StatusCode,
             payload: &[u8],
-        ) -> Result<FetchCandlesResponse, Self::OutputError>
+        ) -> Result<re, Self::OutputError>
         where
-        FetchCandlesResponse: serde::de::DeserializeOwned, {
-          let res = payload.json::<Vec<Vec<Value>>>()?;
-
-            // match status {
-            //     StatusCode::OK => Ok(payload.json::<T>()?),
-            //     StatusCode::INTERNAL_SERVER_ERROR => {
-            //         bail!("Internal Server Error");
-            //     }
-            //     StatusCode::SERVICE_UNAVAILABLE => {
-            //         bail!("Service Unavailable");
-            //     }
-            //     StatusCode::UNAUTHORIZED => {
-            //         bail!("Unauthorized");
-            //     }
-            //     StatusCode::BAD_REQUEST => {
-            //         let error: BinanceContentError = response.json()?;
-
-            //         Err(ErrorKind::BinanceError(error).into())
-            //     }
-            //     s => {
-            //         bail!(format!("Received response: {:?}", s));
-            //     }
-            // }
+        re: DeserializeOwned, {
 
            // Attempt to deserialise reqwest::Response bytes into Ok(Response)
-        let parse_ok_error = match serde_json::from_slice::<FetchCandlesResponse>(payload) {
-            Ok(response) => return Ok(response),
+        //    let  data = serde_json::from_slice::<Vec<Vec<Value>>>(payload).expect("数据转转错误!");
+        //    println!("data: {:?}", data);
+        // let parse_ok_error = match serde_json::from_slice::<Vec<Vec<Value>>>(payload) {
+        let parse_ok_error = match serde_json::from_slice::<FetchCandlesResponse>(payload) {  
+        // let parse_ok_error = match convert(payload) {  
+            Ok(response) =>{
+                // let fetch_candles_response: FetchCandlesResponse = FetchCandlesResponse{result: response};
+                return Ok(response);
+            },
             Err(serde_error) => serde_error,
         };
-        println!("parse_ok_error: {}", parse_ok_error);
-        println!("payload: {:?}", payload.to_vec());
+        // println!("parse_ok_error: {}", parse_ok_error);
+        // println!("payload: {:?}", payload.to_vec());
         // Attempt to deserialise API Error if Ok(Response) deserialisation failed
         let parse_api_error_error = match serde_json::from_slice::<Self::ApiError>(payload) {
             Ok(api_error) => return Err(self.parse_api_error(status, api_error)),
@@ -212,29 +196,6 @@ impl HttpParser for BinanceParser {
     }
 }
 
-
-// fn handler<T: DeserializeOwned>(&self, response: Response) -> Result<T> {
-//     match response.status() {
-//         StatusCode::OK => Ok(response.json::<T>()?),
-//         StatusCode::INTERNAL_SERVER_ERROR => {
-//             bail!("Internal Server Error");
-//         }
-//         StatusCode::SERVICE_UNAVAILABLE => {
-//             bail!("Service Unavailable");
-//         }
-//         StatusCode::UNAUTHORIZED => {
-//             bail!("Unauthorized");
-//         }
-//         StatusCode::BAD_REQUEST => {
-//             let error: BinanceContentError = response.json()?;
-
-//             Err(ErrorKind::BinanceError(error).into())
-//         }
-//         s => {
-//             bail!(format!("Received response: {:?}", s));
-//         }
-//     }
-// }
 pub struct RequestUnsinger {}
 impl BuildStrategy for RequestUnsinger {
     fn build<Request>(

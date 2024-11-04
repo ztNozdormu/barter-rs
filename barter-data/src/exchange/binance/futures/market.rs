@@ -91,7 +91,7 @@ impl FuturesMarket {
         // println!("response: {:?}", response);
         match response {
             Ok((data, metric)) => {
-                println!("Success: {:?}", data);
+                println!("Success: {:?}", data.result);
                 println!("Metric: {:?}", metric);
                 let klines: KlineSummaries = KlineSummaries::AllKlineSummaries(
                     data.result
