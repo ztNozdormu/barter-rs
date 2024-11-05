@@ -12,7 +12,7 @@ use crate::exchange::errors::ExecutionError;
 
 use serde_json::Value;
 
-use super::{config::Config, futures::market::FuturesMarket, model::KlineSummary};
+use super::{config::Config, futures::market::FuturesMarket, model::{KlineSummaries, KlineSummary}};
 
 #[allow(clippy::all)]
 pub enum API {
@@ -139,23 +139,26 @@ impl HttpParser for BinanceParser {
     type ApiError = serde_json::Value;
     type OutputError = ExecutionError;
 
-    fn parse<re>(
+    fn parse<KlineSummaries>(
             &self,
             status: StatusCode,
             payload: &[u8],
-        ) -> Result<re, Self::OutputError>
+        ) -> Result<KlineSummaries, Self::OutputError>
         where
-        re: DeserializeOwned, {
+        KlineSummaries: DeserializeOwned, {
 
            // Attempt to deserialise reqwest::Response bytes into Ok(Response)
-        //    let  data = serde_json::from_slice::<Vec<Vec<Value>>>(payload).expect("数据转转错误!");
+           let data = serde_json::from_slice::<Vec<Vec<Value>>>(payload).expect("数据转转错误!");
         //    println!("data: {:?}", data);
-        // let parse_ok_error = match serde_json::from_slice::<Vec<Vec<Value>>>(payload) {
-        let parse_ok_error = match serde_json::from_slice::<FetchCandlesResponse>(payload) {  
+        let parse_ok_error = match serde_json::from_slice::<Vec<Vec<Value>>>(payload) {
+            
+        //    let parse_ok_error = match serde_json::from_value::<FetchCandlesResponse>(data.into()) {
+        // let parse_ok_error = match serde_json::from_slice::<FetchCandlesResponse>(payload) {  
         // let parse_ok_error = match convert(payload) {  
             Ok(response) =>{
-                // let fetch_candles_response: FetchCandlesResponse = FetchCandlesResponse{result: response};
-                return Ok(response);
+                // let fetch_candles_response: FetchCandlesResponse = FetchCandlesResponse{result: data};
+                let fetch_candles_response: KlineSummaries = convert_to_structs(response).expect("转换失败"); 
+                return Ok(fetch_candles_response);
             },
             Err(serde_error) => serde_error,
         };
@@ -196,6 +199,17 @@ impl HttpParser for BinanceParser {
     }
 }
 
+// Function to convert Vec<Vec<Value>> to Vec<MyStruct>
+fn convert_to_structs(data: Vec<Vec<Value>>) -> crate::exchange::errors::Result<KlineSummaries> {
+  
+    let klines: KlineSummaries = KlineSummaries::AllKlineSummaries(
+        data.iter()
+            .map(|row| row.try_into())
+            .collect::<crate::exchange::errors::Result<Vec<KlineSummary>>>()?,
+    );
+    Ok(klines)
+}
+
 pub struct RequestUnsinger {}
 impl BuildStrategy for RequestUnsinger {
     fn build<Request>(
@@ -217,7 +231,7 @@ pub struct FetchCandlesRequest {
 }
 
 impl RestRequest for FetchCandlesRequest {
-    type Response = FetchCandlesResponse; // Define Response type
+    type Response = KlineSummaries; // Define Response type
     type QueryParams = BTreeMap<String, String>; // FetchBalances does not require any QueryParams
     type Body = (); // FetchBalances does not require any Body
 

@@ -33,6 +33,7 @@ use crate::{
     subscription::candle,
 };
 use barter_integration::protocol::http::rest::{client::RestClient, RestRequest};
+use serde_json::Value;
 use std::collections::BTreeMap;
 // TODO
 // Make enums for Strings
@@ -87,15 +88,14 @@ impl FuturesMarket {
         let rug = RequestUnsinger {};
         // // Build RestClient with Ftx configuration
         let rest_client = RestClient::new(config.futures_rest_api_endpoint, rug, BinanceParser);
-        let response: std::result::Result<(crate::exchange::binance::api::FetchCandlesResponse, barter_integration::metric::Metric), crate::exchange::errors::ExecutionError> = rest_client.execute(fetch_candles_request).await;
+        let response: std::result::Result<(KlineSummaries, barter_integration::metric::Metric), crate::exchange::errors::ExecutionError> = rest_client.execute(fetch_candles_request).await;
         // println!("response: {:?}", response);
         match response {
             Ok((data, metric)) => {
                 println!("Success: {:?}", data.result);
                 println!("Metric: {:?}", metric);
                 let klines: KlineSummaries = KlineSummaries::AllKlineSummaries(
-                    data.result
-                        .iter()
+                    data.result.iter()
                         .map(|row| row.try_into())
                         .collect::<Result<Vec<KlineSummary>>>()?,
                 );
