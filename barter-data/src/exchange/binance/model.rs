@@ -1,6 +1,16 @@
-use crate::exchange::errors::{Error, ErrorKind, Result};
+use crate::exchange::errors::{Error, ErrorKind, ExecutionError, Result};
+use barter_integration::{
+    error::SocketError,
+    protocol::http::{rest::RestRequest, HttpParser},
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
+
+use super::api::BinanceParser;
+use crate::error;
+use reqwest::StatusCode;
+use serde::de::DeserializeOwned;
+use std::{borrow::Cow, collections::BTreeMap};
 
 #[derive(Deserialize, Clone)]
 pub struct Empty {}
@@ -994,6 +1004,10 @@ pub struct IndexKlineEvent {
     pub kline: IndexKline,
 }
 
+// ********************************************************************
+//              Binance Futures Kline Data Fetch Define Struct Start
+// ********************************************************************
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct KlineSummary {
     pub open_time: i64,
@@ -1053,6 +1067,91 @@ impl TryFrom<&Vec<Value>> for KlineSummary {
         })
     }
 }
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+pub struct FetchCandlesResponse(pub Vec<Vec<Value>>);
+
+impl HttpParser for BinanceParser {
+    type ApiError = serde_json::Value;
+    type OutputError = ExecutionError;
+
+    fn parse<FetchCandlesResponse>(
+        &self,
+        status: StatusCode,
+        payload: &[u8],
+    ) -> std::result::Result<FetchCandlesResponse, ExecutionError>
+    where
+        FetchCandlesResponse: DeserializeOwned,
+    {
+        // Attempt to deserialise reqwest::Response bytes into Ok(Response)
+        let parse_ok_error = match serde_json::from_slice::<FetchCandlesResponse>(payload) {
+            Ok(response) => {
+                return Ok(response);
+            }
+            Err(serde_error) => serde_error,
+        };
+        // Attempt to deserialise API Error if Ok(Response) deserialisation failed
+        let parse_api_error_error = match serde_json::from_slice::<Self::ApiError>(payload) {
+            Ok(api_error) => return Err(self.parse_api_error(status, api_error)),
+            Err(serde_error) => serde_error,
+        };
+
+        // Log errors if failed to deserialise reqwest::Response into Response or API Self::Error
+        error!(
+            status_code = ?status,
+            ?parse_ok_error,
+            ?parse_api_error_error,
+            response_body = %String::from_utf8_lossy(payload),
+            "error deserializing HTTP response"
+        );
+
+        Err(Self::OutputError::from(SocketError::DeserialiseBinary {
+            error: parse_ok_error,
+            payload: payload.to_vec(),
+        }))
+    }
+
+    fn parse_api_error(&self, status: StatusCode, api_error: Self::ApiError) -> Self::OutputError {
+        // For simplicity, use serde_json::Value as Error and extract raw String for parsing
+        let error = api_error.to_string();
+
+        // Parse Ftx error message to determine custom ExecutionError variant
+        match error.as_str() {
+            message if message.contains("Invalid login credentials") => {
+                ExecutionError::Unauthorised(error)
+            }
+            _ => ExecutionError::Socket(SocketError::HttpResponse(status, error)),
+        }
+    }
+}
+
+// 市场数据对应模型定义
+pub struct FetchCandlesRequest {
+    pub(crate) query_params: BTreeMap<String, String>,
+}
+
+impl RestRequest for FetchCandlesRequest {
+    type Response = FetchCandlesResponse; // Define Response type
+    type QueryParams = BTreeMap<String, String>; // FetchBalances does not require any QueryParams
+    type Body = (); // FetchBalances does not require any Body
+
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed("/fapi/v1/klines")
+    }
+
+    fn method() -> reqwest::Method {
+        reqwest::Method::GET
+    }
+
+    fn query_params(&self) -> Option<&Self::QueryParams> {
+        Some(&self.query_params)
+    }
+}
+
+// ********************************************************************
+//              Binance Futures Kline Data Fetch Define Struct End
+// ********************************************************************
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

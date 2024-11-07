@@ -20,21 +20,17 @@
 - [ ] `Taker Buy/Sell Volume (MARKET_DATA)`
 */
 
-use crate::{
-    exchange::{
-        binance::{
-            api::{BinanceParser, FetchCandlesRequest, RequestUnsinger},
-            config::{self, Config},
-            model::{KlineSummaries, KlineSummary},
-            util::build_request,
-        },
-        errors::{ErrorKind, Result},
+use crate::exchange::{
+    binance::{
+        api::{BinanceParser, RequestUnsinger},
+        config::Config,
+        model::{FetchCandlesRequest, FetchCandlesResponse, KlineSummaries, KlineSummary},
     },
-    subscription::candle,
+    errors::{ErrorKind, Result},
 };
-use barter_integration::protocol::http::rest::{client::RestClient, RestRequest};
-use serde_json::Value;
+use barter_integration::protocol::http::rest::client::RestClient;
 use std::collections::BTreeMap;
+
 // TODO
 // Make enums for Strings
 // Add limit parameters to functions
@@ -88,14 +84,17 @@ impl FuturesMarket {
         let rug = RequestUnsinger {};
         // // Build RestClient with Ftx configuration
         let rest_client = RestClient::new(config.futures_rest_api_endpoint, rug, BinanceParser);
-        let response: std::result::Result<(KlineSummaries, barter_integration::metric::Metric), crate::exchange::errors::ExecutionError> = rest_client.execute(fetch_candles_request).await;
-        // println!("response: {:?}", response);
+        let response: std::result::Result<
+            (FetchCandlesResponse, barter_integration::metric::Metric),
+            crate::exchange::errors::ExecutionError,
+        > = rest_client.execute(fetch_candles_request).await;
         match response {
             Ok((data, metric)) => {
-                println!("Success: {:?}", data.result);
-                println!("Metric: {:?}", metric);
+                // println!("Success: {:?}", data.0);
+                // println!("Metric: {:?}", metric);
                 let klines: KlineSummaries = KlineSummaries::AllKlineSummaries(
-                    data.result.iter()
+                    data.0
+                        .iter()
                         .map(|row| row.try_into())
                         .collect::<Result<Vec<KlineSummary>>>()?,
                 );

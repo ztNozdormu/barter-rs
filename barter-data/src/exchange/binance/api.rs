@@ -1,18 +1,10 @@
-use std::{borrow::Cow, collections::BTreeMap};
-
+use super::{config::Config, futures::market::FuturesMarket};
 use barter_integration::{
     error::SocketError,
-    protocol::http::{rest::RestRequest, BuildStrategy, HttpParser},
+    protocol::http::{rest::RestRequest, BuildStrategy},
 };
 use chrono::{DateTime, Utc};
-use reqwest::StatusCode;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use tracing::error;
-use crate::exchange::errors::ExecutionError;
-
-use serde_json::Value;
-
-use super::{config::Config, futures::market::FuturesMarket, model::{KlineSummaries, KlineSummary}};
+use std::borrow::Cow;
 
 #[allow(clippy::all)]
 pub enum API {
@@ -109,108 +101,12 @@ impl From<API> for String {
     }
 }
 
-// *****************************************************
-//              Binance Futures Data Fetch
-// *****************************************************
+// *************************************************************
+//              Binance Futures Data Fetch Common Define Start
+// *************************************************************
 
-pub struct BinanceSigner {
-    pub api_key: String,
-    pub secret: String,
-}
+pub struct RequestUnsinger;
 
-// Configuration required to sign every Ftx `RestRequest`
-struct BinanceSignConfig<'a> {
-    api_key: &'a str,
-    time: DateTime<Utc>,
-    method: reqwest::Method,
-    path: Cow<'static, str>,
-}
-
-pub struct BinanceParser;
-
-#[derive(Deserialize)]
-#[allow(dead_code)]
-pub struct FetchCandlesResponse
-{
-    pub result: Vec<Vec<Value>>,
-}
-
-impl HttpParser for BinanceParser {
-    type ApiError = serde_json::Value;
-    type OutputError = ExecutionError;
-
-    fn parse<KlineSummaries>(
-            &self,
-            status: StatusCode,
-            payload: &[u8],
-        ) -> Result<KlineSummaries, Self::OutputError>
-        where
-        KlineSummaries: DeserializeOwned, {
-
-           // Attempt to deserialise reqwest::Response bytes into Ok(Response)
-           let data = serde_json::from_slice::<Vec<Vec<Value>>>(payload).expect("数据转转错误!");
-        //    println!("data: {:?}", data);
-        let parse_ok_error = match serde_json::from_slice::<Vec<Vec<Value>>>(payload) {
-            
-        //    let parse_ok_error = match serde_json::from_value::<FetchCandlesResponse>(data.into()) {
-        // let parse_ok_error = match serde_json::from_slice::<FetchCandlesResponse>(payload) {  
-        // let parse_ok_error = match convert(payload) {  
-            Ok(response) =>{
-                // let fetch_candles_response: FetchCandlesResponse = FetchCandlesResponse{result: data};
-                let fetch_candles_response: KlineSummaries = convert_to_structs(response).expect("转换失败"); 
-                return Ok(fetch_candles_response);
-            },
-            Err(serde_error) => serde_error,
-        };
-        // println!("parse_ok_error: {}", parse_ok_error);
-        // println!("payload: {:?}", payload.to_vec());
-        // Attempt to deserialise API Error if Ok(Response) deserialisation failed
-        let parse_api_error_error = match serde_json::from_slice::<Self::ApiError>(payload) {
-            Ok(api_error) => return Err(self.parse_api_error(status, api_error)),
-            Err(serde_error) => serde_error,
-        };
-   
-        // Log errors if failed to deserialise reqwest::Response into Response or API Self::Error
-        error!(
-            status_code = ?status,
-            ?parse_ok_error,
-            ?parse_api_error_error,
-            response_body = %String::from_utf8_lossy(payload),
-            "error deserializing HTTP response"
-        );
-
-        Err(Self::OutputError::from(SocketError::DeserialiseBinary {
-            error: parse_ok_error,
-            payload: payload.to_vec(),
-        }))
-    }
-
-    fn parse_api_error(&self, status: StatusCode, api_error: Self::ApiError) -> Self::OutputError {
-        // For simplicity, use serde_json::Value as Error and extract raw String for parsing
-        let error = api_error.to_string();
-
-        // Parse Ftx error message to determine custom ExecutionError variant
-        match error.as_str() {
-            message if message.contains("Invalid login credentials") => {
-                ExecutionError::Unauthorised(error)
-            }
-            _ => ExecutionError::Socket(SocketError::HttpResponse(status, error)),
-        }
-    }
-}
-
-// Function to convert Vec<Vec<Value>> to Vec<MyStruct>
-fn convert_to_structs(data: Vec<Vec<Value>>) -> crate::exchange::errors::Result<KlineSummaries> {
-  
-    let klines: KlineSummaries = KlineSummaries::AllKlineSummaries(
-        data.iter()
-            .map(|row| row.try_into())
-            .collect::<crate::exchange::errors::Result<Vec<KlineSummary>>>()?,
-    );
-    Ok(klines)
-}
-
-pub struct RequestUnsinger {}
 impl BuildStrategy for RequestUnsinger {
     fn build<Request>(
         &self,
@@ -225,30 +121,21 @@ impl BuildStrategy for RequestUnsinger {
     }
 }
 
-// 市场数据对应模型定义
-pub struct FetchCandlesRequest {
-    pub(crate) query_params: BTreeMap<String, String>,
+pub struct BinanceSigner {
+    pub api_key: String,
+    pub secret: String,
 }
 
-impl RestRequest for FetchCandlesRequest {
-    type Response = KlineSummaries; // Define Response type
-    type QueryParams = BTreeMap<String, String>; // FetchBalances does not require any QueryParams
-    type Body = (); // FetchBalances does not require any Body
-
-    fn path(&self) -> Cow<'static, str> {
-        Cow::Borrowed("/fapi/v1/klines")
-    }
-
-    fn method() -> reqwest::Method {
-        reqwest::Method::GET
-    }
-
-    fn query_params(&self) -> Option<&Self::QueryParams> {
-        Some(&self.query_params)
-    }
+// Configuration required to sign every Ftx `RestRequest`
+struct BinanceSignConfig<'a> {
+    api_key: &'a str,
+    time: DateTime<Utc>,
+    method: reqwest::Method,
+    path: Cow<'static, str>,
 }
 
-
+#[derive(Debug)]
+pub struct BinanceParser;
 
 pub trait Binance {
     fn new(api_key: Option<String>, secret_key: Option<String>) -> Self;
@@ -279,3 +166,7 @@ impl Binance for FuturesMarket {
         }
     }
 }
+
+// *************************************************************
+//              Binance Futures Data Fetch Common Define  End
+// *************************************************************
