@@ -1076,42 +1076,6 @@ impl HttpParser for BinanceParser {
     type ApiError = serde_json::Value;
     type OutputError = ExecutionError;
 
-    fn parse<FetchCandlesResponse>(
-        &self,
-        status: StatusCode,
-        payload: &[u8],
-    ) -> std::result::Result<FetchCandlesResponse, ExecutionError>
-    where
-        FetchCandlesResponse: DeserializeOwned,
-    {
-        // Attempt to deserialise reqwest::Response bytes into Ok(Response)
-        let parse_ok_error = match serde_json::from_slice::<FetchCandlesResponse>(payload) {
-            Ok(response) => {
-                return Ok(response);
-            }
-            Err(serde_error) => serde_error,
-        };
-        // Attempt to deserialise API Error if Ok(Response) deserialisation failed
-        let parse_api_error_error = match serde_json::from_slice::<Self::ApiError>(payload) {
-            Ok(api_error) => return Err(self.parse_api_error(status, api_error)),
-            Err(serde_error) => serde_error,
-        };
-
-        // Log errors if failed to deserialise reqwest::Response into Response or API Self::Error
-        error!(
-            status_code = ?status,
-            ?parse_ok_error,
-            ?parse_api_error_error,
-            response_body = %String::from_utf8_lossy(payload),
-            "error deserializing HTTP response"
-        );
-
-        Err(Self::OutputError::from(SocketError::DeserialiseBinary {
-            error: parse_ok_error,
-            payload: payload.to_vec(),
-        }))
-    }
-
     fn parse_api_error(&self, status: StatusCode, api_error: Self::ApiError) -> Self::OutputError {
         // For simplicity, use serde_json::Value as Error and extract raw String for parsing
         let error = api_error.to_string();
