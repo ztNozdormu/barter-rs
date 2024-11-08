@@ -11,8 +11,8 @@ async fn main() {
 async fn market_data() {
     let market: FuturesMarket = Binance::new(None, None);
 
-    match market.get_klines("btcusdt", "1m", 10, None, None).await {
-        Ok(KlineSummaries::AllKlineSummaries(answer)) => println!("First kline: {:?}", answer[0]),
+    match market.get_klines("btcusdt", "5m",None , None, None).await {
+        Ok(KlineSummaries::AllKlineSummaries(answer)) => println!("First kline: {:?} kline count : {}", answer[0],answer.len()),
         Err(e) => println!("Error: {}", e),
     }
 }
