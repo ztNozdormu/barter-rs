@@ -1,4 +1,4 @@
-use crate::exchange::errors::{Error, ErrorKind, ExecutionError, Result};
+use crate::{exchange::errors::{Error, ErrorKind, ExecutionError, Result}, subscription::tiker::Tiker};
 use barter_integration::{
     error::SocketError,
     protocol::http::{rest::RestRequest, HttpParser},
@@ -1065,6 +1065,32 @@ impl TryFrom<&Vec<Value>> for KlineSummary {
                 "taker_buy_quote_asset_volume",
             )?)?,
         })
+    }
+}
+
+impl KlineSummary {
+    pub fn new(tiker: Tiker) -> Self {
+        Self {
+            close_time: tiker.close_time.timestamp(),
+            open: tiker.open.to_string(),
+            high: tiker.high.to_string(),
+            low: tiker.low.to_string(),
+            close: tiker.last_price.to_string(),
+            volume: tiker.volume.to_string(),
+            open_time: todo!(),
+            quote_asset_volume: todo!(),
+            number_of_trades: todo!(),
+            taker_buy_base_asset_volume: todo!(),
+            taker_buy_quote_asset_volume: todo!(),
+        }
+    }
+    pub fn update(&mut self, tiker: Tiker) {
+        self.close_time = tiker.close_time.timestamp();
+        self.open = tiker.open.to_string();
+        self.high = tiker.high.to_string();
+        self.low = tiker.low.to_string();
+        self.close = tiker.last_price.to_string();
+        self.volume = tiker.volume.to_string();
     }
 }
 
