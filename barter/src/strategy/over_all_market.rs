@@ -59,15 +59,15 @@ impl SignalGenerator for OverAllStrategy {
 
 impl OverAllStrategy {
     /// Constructs a new [`OverAllStrategy`] component using the provided configuration struct.
-    pub fn new(config: Config) -> Self {
-        let rsi_indicator = RelativeStrengthIndex::new(config.rsi_period)
-            .expect("Failed to construct RSI indicator");
-        let candle_manager = CandleManager::init();
-        Self {
-            rsi: rsi_indicator,
-            candle_manager,
-        }
-    }
+    // pub fn new(config: Config) -> Self {
+    //     let rsi_indicator = RelativeStrengthIndex::new(config.rsi_period)
+    //         .expect("Failed to construct RSI indicator");
+    //     let candle_manager = CandleManager::init().await;
+    //     Self {
+    //         rsi: rsi_indicator,
+    //         candle_manager,
+    //     }
+    // }
 
     /// Given the latest RSI value for a symbol, generates a map containing the [`SignalStrength`] for
     /// [`Decision`] under consideration.

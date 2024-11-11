@@ -49,3 +49,6 @@ uuid = { workspace = true, features = ["v4", "serde"] }
 chrono = { workspace = true, features = ["serde"]}
 parking_lot = { workspace = true }
 prettytable-rs = "0.10.0"
+
+# rand
+rand = "0.8.5"
