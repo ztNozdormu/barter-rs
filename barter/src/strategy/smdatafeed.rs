@@ -2,7 +2,7 @@
 策略市场数据业务 TODO
 */
 
-use barter_data::subscription::{candle::Candle, tiker::Tiker};
+use barter_data::{exchange::binance::model::KlineSummary, subscription::{candle::Candle, tiker::Tiker}};
 use std::sync::{Arc, Mutex};
 use tokio::{
     task,
@@ -13,8 +13,8 @@ use tokio::{
 #[derive(Clone, Debug)]
 pub struct CandleManager {
     // TODO 需要改造适应多周期多币种集合
-    candles: Arc<Mutex<Vec<Candle>>>,
-    current_candle: Arc<Mutex<Option<Candle>>>,
+    candles: Arc<Mutex<Vec<KlineSummary>>>,
+    current_candle: Arc<Mutex<Option<KlineSummary>>>,
 }
 
 impl CandleManager {
@@ -32,7 +32,7 @@ impl CandleManager {
         if let Some(candle) = current.as_mut() {
             candle.update(tiker);
         } else {
-            *current = Some(Candle::new(tiker));
+            *current = Some(KlineSummary::new(tiker));
         }
     }
 
