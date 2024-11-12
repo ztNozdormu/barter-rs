@@ -20,8 +20,8 @@
 - [ ] `Taker Buy/Sell Volume (MARKET_DATA)`
 */
 
-use barter_data::exchange::errors::{ErrorKind, Result};
-use barter_integration::protocol::http::rest::client::RestClient;
+use crate::exchange::errors::{ErrorKind, Result};
+use barter_integration::{metric, protocol::http::rest::client::RestClient};
 use std::collections::BTreeMap;
 
 use crate::{config::Config, exchange::binance::{api::{BinanceParser, RequestUnsinger}, model::{FetchCandlesRequest, FetchCandlesResponse, KlineSummaries, KlineSummary}}};

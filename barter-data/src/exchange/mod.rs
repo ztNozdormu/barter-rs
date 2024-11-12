@@ -40,9 +40,6 @@ pub mod okx;
 /// exchange [`Connector`] to build [`WsMessage`] subscription payloads.
 pub mod subscription;
 
-/// `Exchange` errors.
-pub mod errors;
-
 /// Default [`Duration`] the [`Connector::SubValidator`] will wait to receive all success responses to actioned
 /// [`Subscription`](subscription::Subscription) requests.
 pub const DEFAULT_SUBSCRIPTION_TIMEOUT: Duration = Duration::from_secs(10);

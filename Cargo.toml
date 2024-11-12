@@ -6,7 +6,7 @@ members = [
     "barter-integration",
     "barter-execution",
     "barter-macro"
-, "barter-instrument", "barter-change"]
+, "barter-instrument", "barter-xchange"]
 
 [workspace.dependencies]
 # Logging

@@ -1,4 +1,4 @@
-use super::{tiker::Tiker, SubscriptionKind};
+use super::SubscriptionKind;
 use chrono::{DateTime, Utc};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};

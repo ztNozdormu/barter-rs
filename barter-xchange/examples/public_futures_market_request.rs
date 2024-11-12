@@ -1,3 +1,5 @@
+use barter_xchange::exchange::binance::{api::Binance, futures::market::FuturesMarket, model::KlineSummaries};
+
 #[rustfmt::skip]
 #[tokio::main]
 async fn main() {
