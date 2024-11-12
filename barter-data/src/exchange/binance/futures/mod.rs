@@ -24,8 +24,6 @@ pub mod liquidation;
 /// Tiker types.
 pub mod tiker;
 
-/// Market types.
-pub mod market;
 
 /// [`BinanceFuturesUsd`] WebSocket server base url.
 ///

@@ -1,15 +1,14 @@
-use crate::{exchange::errors::{Error, ErrorKind, ExecutionError, Result}, subscription::tiker::Tiker};
+use barter_data::{exchange::errors::{Error, ErrorKind, ExecutionError, Result}, subscription::tiker::Tiker};
 use barter_integration::{
     error::SocketError,
     protocol::http::{rest::RestRequest, HttpParser},
 };
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
-
+use crate::exchange::binance::futures::market::FuturesMarket;
+use crate::config::Config;
 use super::api::BinanceParser;
-use crate::error;
-use reqwest::StatusCode;
-use serde::de::DeserializeOwned;
 use std::{borrow::Cow, collections::BTreeMap};
 
 #[derive(Deserialize, Clone)]

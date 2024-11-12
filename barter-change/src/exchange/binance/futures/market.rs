@@ -20,16 +20,11 @@
 - [ ] `Taker Buy/Sell Volume (MARKET_DATA)`
 */
 
-use crate::exchange::{
-    binance::{
-        api::{BinanceParser, RequestUnsinger},
-        config::Config,
-        model::{FetchCandlesRequest, FetchCandlesResponse, KlineSummaries, KlineSummary},
-    },
-    errors::{ErrorKind, Result},
-};
+use barter_data::exchange::errors::{ErrorKind, Result};
 use barter_integration::protocol::http::rest::client::RestClient;
 use std::collections::BTreeMap;
+
+use crate::{config::Config, exchange::binance::{api::{BinanceParser, RequestUnsinger}, model::{FetchCandlesRequest, FetchCandlesResponse, KlineSummaries, KlineSummary}}};
 
 // TODO
 // Make enums for Strings

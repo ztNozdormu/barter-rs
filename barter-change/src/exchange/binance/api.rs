@@ -1,10 +1,12 @@
-use super::{config::Config, futures::market::FuturesMarket};
+
 use barter_integration::{
     error::SocketError,
     protocol::http::{rest::RestRequest, BuildStrategy},
 };
 use chrono::{DateTime, Utc};
 use std::borrow::Cow;
+use crate::exchange::binance::futures::market::FuturesMarket;
+use crate::config::Config;
 
 #[allow(clippy::all)]
 pub enum API {

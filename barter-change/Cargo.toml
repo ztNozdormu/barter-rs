@@ -1,0 +1,41 @@
+[package]
+name = "barter-change"
+version = "0.0.1"
+edition = "2021"
+authors = ["ztNozdormu"]
+license = "MIT"
+documentation = "https://docs.rs/barter-data/"
+repository = "https://github.com/ztNozdormu/barter-rs"
+readme = "README.md"
+description = "High performance & normalised WebSocket intergration for leading cryptocurrency exchanges - batteries included."
+keywords = ["trading", "backtesting", "crypto", "stocks", "investment"]
+categories = ["accessibility", "simulation"]
+[dependencies]
+# Barter Ecosystem
+barter-integration = { path = "../barter-integration", version = "0.7.4" }
+barter-data = { path = "../barter-data", version = "0.9.0" }
+
+
+# Protocol
+url = { workspace = true }
+reqwest = { workspace = true }
+
+# SerDe
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Async
+tokio = { workspace = true, features = ["sync"] }
+tokio-stream = { workspace = true, features = ["sync"] }
+futures = { workspace = true }
+async-trait = { workspace = true }
+
+# Error
+thiserror = { workspace = true }
+error-chain = { version = "0.12.4", default-features = false }
+
+# Misc
+chrono = { workspace = true, features = ["serde"]}
