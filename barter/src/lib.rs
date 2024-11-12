@@ -97,12 +97,12 @@
 //! use std::marker::PhantomData;
 //! use uuid::Uuid;
 //! use barter_instrument::exchange::ExchangeId;
-//! use barter_instrument::instrument::kind::InstrumentKind;
+//! use barter_instrument::instrument::market_data::kind::MarketDataInstrumentKind;
 //! use barter_instrument::market::Market;
 //!
 //! let components = PortfolioLego {
 //!     engine_id: Uuid::new_v4(),
-//!     markets: vec![Market::new(ExchangeId::BinanceSpot, ("btc", "usdt", InstrumentKind::Spot))],
+//!     markets: vec![Market::new(ExchangeId::BinanceSpot, ("btc", "usdt", MarketDataInstrumentKind::Spot))],
 //!     repository: InMemoryRepository::new(),
 //!     allocator: DefaultAllocator{ default_order_value: 100.0 },
 //!     risk: DefaultRisk{},
@@ -204,6 +204,8 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::module_inception)]
 
+#[macro_use]
+extern crate prettytable;
 /// Defines a MarketEvent, and provides the Continuer and MarketGenerator traits for
 /// handling the generation of them. Contains implementations such as the (tick-by_tick)
 /// LiveTradeHandler, and HistoricalCandleHandler that generates a market feed and acts as the
@@ -244,9 +246,6 @@ pub mod statistic;
 /// Execution components, as well as shared access to a global Portfolio.
 pub mod engine;
 
-#[macro_use]
-extern crate prettytable;
-
 pub mod test_util {
     use crate::{
         data::MarketMeta,
@@ -260,7 +259,7 @@ pub mod test_util {
     };
     use barter_instrument::{
         exchange::ExchangeId,
-        instrument::{kind::InstrumentKind, Instrument},
+        instrument::market_data::{kind::MarketDataInstrumentKind, MarketDataInstrument},
     };
     use barter_integration::Side;
     use chrono::Utc;
@@ -268,12 +267,12 @@ pub mod test_util {
     use std::ops::Add;
 
     /// Build a [`MarketEvent`] of [`DataKind::PublicTrade`](DataKind) with the provided [`Side`].
-    pub fn market_event_trade(side: Side) -> MarketEvent<Instrument, DataKind> {
+    pub fn market_event_trade(side: Side) -> MarketEvent<MarketDataInstrument, DataKind> {
         MarketEvent {
             time_exchange: Utc::now(),
             time_received: Utc::now(),
             exchange: ExchangeId::BinanceSpot,
-            instrument: Instrument::from(("btc", "usdt", InstrumentKind::Spot)),
+            instrument: MarketDataInstrument::from(("btc", "usdt", MarketDataInstrumentKind::Spot)),
             kind: DataKind::Trade(PublicTrade {
                 id: "trade_id".to_string(),
                 price: 1000.0,
@@ -284,13 +283,13 @@ pub mod test_util {
     }
 
     /// Build a [`MarketEvent`] of [`DataKind::Candle`](DataKind).
-    pub fn market_event_candle() -> MarketEvent<Instrument, DataKind> {
+    pub fn market_event_candle() -> MarketEvent<MarketDataInstrument, DataKind> {
         let now = Utc::now();
         MarketEvent {
             time_exchange: now,
             time_received: now.add(chrono::Duration::milliseconds(200)),
             exchange: ExchangeId::BinanceSpot,
-            instrument: Instrument::from(("btc", "usdt", InstrumentKind::Spot)),
+            instrument: MarketDataInstrument::from(("btc", "usdt", MarketDataInstrumentKind::Spot)),
             kind: DataKind::Candle(Candle {
                 close_time: now,
                 open: 960.0,
@@ -308,7 +307,7 @@ pub mod test_util {
         Signal {
             time: Utc::now(),
             exchange: ExchangeId::BinanceSpot,
-            instrument: Instrument::from(("btc", "usdt", InstrumentKind::Spot)),
+            instrument: MarketDataInstrument::from(("btc", "usdt", MarketDataInstrumentKind::Spot)),
             signals: Default::default(),
             market_meta: Default::default(),
         }
@@ -319,7 +318,7 @@ pub mod test_util {
         OrderEvent {
             time: Utc::now(),
             exchange: ExchangeId::BinanceSpot,
-            instrument: Instrument::from(("eth", "usdt", InstrumentKind::Spot)),
+            instrument: MarketDataInstrument::from(("eth", "usdt", MarketDataInstrumentKind::Spot)),
             market_meta: MarketMeta::default(),
             decision: Decision::default(),
             quantity: 1.0,
@@ -332,7 +331,7 @@ pub mod test_util {
         FillEvent {
             time: Utc::now(),
             exchange: ExchangeId::BinanceSpot,
-            instrument: Instrument::from(("eth", "usdt", InstrumentKind::Spot)),
+            instrument: MarketDataInstrument::from(("eth", "usdt", MarketDataInstrumentKind::Spot)),
             market_meta: Default::default(),
             decision: Decision::default(),
             quantity: 1.0,
@@ -346,7 +345,7 @@ pub mod test_util {
         Position {
             position_id: "engine_id_trader_{}_{}_position".to_smolstr(),
             exchange: ExchangeId::BinanceSpot,
-            instrument: Instrument::from(("eth", "usdt", InstrumentKind::Spot)),
+            instrument: MarketDataInstrument::from(("eth", "usdt", MarketDataInstrumentKind::Spot)),
             meta: Default::default(),
             side: Side::Buy,
             quantity: 1.0,
@@ -358,7 +357,7 @@ pub mod test_util {
             exit_fees_total: 0.0,
             exit_avg_price_gross: 0.0,
             exit_value_gross: 0.0,
-            current_symbol_price: 100.0,
+            current_price: 100.0,
             current_value_gross: 100.0,
             unrealised_profit_loss: 0.0,
             realised_profit_loss: 0.0,

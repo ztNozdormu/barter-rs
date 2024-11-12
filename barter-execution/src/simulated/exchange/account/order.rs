@@ -1,24 +1,24 @@
 use crate::{
-    model::trade::{SymbolFees, Trade, TradeId},
+    model::trade::{AssetFees, Trade, TradeId},
     ExecutionError, Open, Order, OrderId, RequestOpen,
 };
 use barter_data::subscription::trade::PublicTrade;
-use barter_instrument::instrument::Instrument;
+use barter_instrument::instrument::market_data::MarketDataInstrument;
 use barter_integration::Side;
 use serde::{Deserialize, Serialize};
 use smol_str::ToSmolStr;
 use std::{cmp::Ordering, collections::HashMap};
 
-/// [`ClientAccount`](super::ClientAccount) [`Orders`] for each [`Instrument`].
+/// [`ClientAccount`](super::ClientAccount) [`Orders`] for each [`MarketDataInstrument`].
 #[derive(Clone, Eq, PartialEq, Debug, Default, Deserialize, Serialize)]
 pub struct ClientOrders {
     pub request_counter: u64,
-    pub all: HashMap<Instrument, Orders>,
+    pub all: HashMap<MarketDataInstrument, Orders>,
 }
 
 impl ClientOrders {
-    /// Construct a new [`ClientOrders`] from the provided selection of [`Instrument`]s.
-    pub fn new(instruments: Vec<Instrument>) -> Self {
+    /// Construct a new [`ClientOrders`] from the provided selection of [`MarketDataInstrument`]s.
+    pub fn new(instruments: Vec<MarketDataInstrument>) -> Self {
         Self {
             request_counter: 0,
             all: instruments
@@ -28,8 +28,11 @@ impl ClientOrders {
         }
     }
 
-    /// Return a mutable reference to the client [`Orders`] of the specified [`Instrument`].
-    pub fn orders_mut(&mut self, instrument: &Instrument) -> Result<&mut Orders, ExecutionError> {
+    /// Return a mutable reference to the client [`Orders`] of the specified [`MarketDataInstrument`].
+    pub fn orders_mut(
+        &mut self,
+        instrument: &MarketDataInstrument,
+    ) -> Result<&mut Orders, ExecutionError> {
         self.all.get_mut(instrument).ok_or_else(|| {
             ExecutionError::Simulated(format!(
                 "SimulatedExchange is not configured for Instrument: {instrument}"
@@ -37,7 +40,7 @@ impl ClientOrders {
         })
     }
 
-    /// Fetch the bid and ask [`Order<Open>`]s for every [`Instrument`].
+    /// Fetch the bid and ask [`Order<Open>`]s for every [`MarketDataInstrument`].
     pub fn fetch_all(&self) -> Vec<Order<Open>> {
         self.all
             .values()
@@ -66,7 +69,7 @@ impl ClientOrders {
     }
 }
 
-/// Client [`Orders`] for an [`Instrument`]. Simulates client orders in an real
+/// Client [`Orders`] for an [`MarketDataInstrument`]. Simulates client orders in an real
 /// multi-participant OrderBook.
 #[derive(Clone, Eq, PartialEq, Debug, Default, Deserialize, Serialize)]
 pub struct Orders {
@@ -203,7 +206,7 @@ impl Orders {
         trades
     }
 
-    /// Generate a client [`Trade`] with a unique [`TradeId`] for this [`Instrument`] market.
+    /// Generate a client [`Trade`] with a unique [`TradeId`] for this [`MarketDataInstrument`] market.
     pub fn generate_trade(
         &self,
         order: Order<Open>,
@@ -225,7 +228,7 @@ impl Orders {
         }
     }
 
-    /// Use the `trade_counter` value to generate a unique [`TradeId`] for this [`Instrument`]
+    /// Use the `trade_counter` value to generate a unique [`TradeId`] for this [`MarketDataInstrument`]
     /// market.
     pub fn trade_id(&self) -> TradeId {
         TradeId(self.trade_counter.to_smolstr())
@@ -320,11 +323,11 @@ impl OrderFill {
     }
 }
 
-/// Calculate the [`SymbolFees`] of a [`Order<Open>`] match (trade).
-pub fn calculate_fees(order: &Order<Open>, trade_quantity: f64, fees_percent: f64) -> SymbolFees {
+/// Calculate the [`AssetFees`] of a [`Order<Open>`] match (trade).
+pub fn calculate_fees(order: &Order<Open>, trade_quantity: f64, fees_percent: f64) -> AssetFees {
     match order.side {
-        Side::Buy => SymbolFees::new(order.instrument.base.clone(), fees_percent * trade_quantity),
-        Side::Sell => SymbolFees::new(
+        Side::Buy => AssetFees::new(order.instrument.base.clone(), fees_percent * trade_quantity),
+        Side::Sell => AssetFees::new(
             order.instrument.quote.clone(),
             fees_percent * order.state.price * trade_quantity,
         ),
@@ -464,7 +467,7 @@ mod tests {
                     Side::Buy,
                     200.0,
                     1.0,
-                    SymbolFees::new("base", 0.1 * 1.0),
+                    AssetFees::new("base", 0.1 * 1.0),
                 )],
             },
             TestCase {
@@ -486,14 +489,14 @@ mod tests {
                         Side::Buy,
                         200.0,
                         1.0,
-                        SymbolFees::new("base", 0.1 * 1.0),
+                        AssetFees::new("base", 0.1 * 1.0),
                     ),
                     trade(
                         TradeId(2.to_smolstr()),
                         Side::Buy,
                         100.0,
                         1.0,
-                        SymbolFees::new("base", 0.1 * 1.0),
+                        AssetFees::new("base", 0.1 * 1.0),
                     ),
                 ],
             },
@@ -520,14 +523,14 @@ mod tests {
                         Side::Buy,
                         200.0,
                         1.0,
-                        SymbolFees::new("base", 0.1 * 1.0),
+                        AssetFees::new("base", 0.1 * 1.0),
                     ),
                     trade(
                         TradeId(2.to_smolstr()),
                         Side::Buy,
                         100.0,
                         0.5,
-                        SymbolFees::new("base", 0.1 * 0.5),
+                        AssetFees::new("base", 0.1 * 0.5),
                     ),
                 ],
             },
@@ -601,7 +604,7 @@ mod tests {
                     Side::Sell,
                     100.0,
                     1.0,
-                    SymbolFees::new("quote", 0.1 * 100.0 * 1.0),
+                    AssetFees::new("quote", 0.1 * 100.0 * 1.0),
                 )],
             },
             TestCase {
@@ -623,14 +626,14 @@ mod tests {
                         Side::Sell,
                         100.0,
                         1.0,
-                        SymbolFees::new("quote", 0.1 * 100.0 * 1.0),
+                        AssetFees::new("quote", 0.1 * 100.0 * 1.0),
                     ),
                     trade(
                         TradeId(2.to_smolstr()),
                         Side::Sell,
                         200.0,
                         1.0,
-                        SymbolFees::new("quote", 0.1 * 200.0 * 1.0),
+                        AssetFees::new("quote", 0.1 * 200.0 * 1.0),
                     ),
                 ],
             },
@@ -657,14 +660,14 @@ mod tests {
                         Side::Sell,
                         100.0,
                         1.0,
-                        SymbolFees::new("quote", 0.1 * 100.0 * 1.0),
+                        AssetFees::new("quote", 0.1 * 100.0 * 1.0),
                     ),
                     trade(
                         TradeId(2.to_smolstr()),
                         Side::Sell,
                         200.0,
                         0.5,
-                        SymbolFees::new("quote", 0.1 * 200.0 * 0.5),
+                        AssetFees::new("quote", 0.1 * 200.0 * 0.5),
                     ),
                 ],
             },
@@ -804,7 +807,7 @@ mod tests {
             order: Order<Open>,
             trade_quantity: f64,
             fees_percent: f64,
-            expected: SymbolFees,
+            expected: AssetFees,
         }
 
         let cid = ClientOrderId(Uuid::new_v4());
@@ -815,14 +818,14 @@ mod tests {
                 order: order_open(cid, Side::Buy, 100.0, 10.0, 0.0),
                 trade_quantity: 10.0,
                 fees_percent: 0.1,
-                expected: SymbolFees::new("base", 0.1 * 10.0),
+                expected: AssetFees::new("base", 0.1 * 10.0),
             },
             TestCase {
                 // TC1: 50% trade fees from matched Side::Sell order
                 order: order_open(cid, Side::Sell, 100.0, 10.0, 0.0),
                 trade_quantity: 10.0,
                 fees_percent: 0.5,
-                expected: SymbolFees::new("quote", 0.5 * 100.0 * 10.0),
+                expected: AssetFees::new("quote", 0.5 * 100.0 * 10.0),
             },
         ];
 

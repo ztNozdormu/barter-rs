@@ -24,7 +24,7 @@
 use crate::{
     error::ExecutionError,
     model::{
-        balance::SymbolBalance,
+        balance::AssetBalance,
         order::{Cancelled, Open, Order, OrderId, RequestCancel, RequestOpen},
         AccountEvent,
     },
@@ -65,8 +65,8 @@ pub trait ExecutionClient {
     /// Fetch account [`Order<Open>`]s.
     async fn fetch_orders_open(&self) -> Result<Vec<Order<Open>>, ExecutionError>;
 
-    /// Fetch account [`SymbolBalance`]s.
-    async fn fetch_balances(&self) -> Result<Vec<SymbolBalance>, ExecutionError>;
+    /// Fetch account [`AssetBalance`]s.
+    async fn fetch_balances(&self) -> Result<Vec<AssetBalance>, ExecutionError>;
 
     /// Open orders.
     async fn open_orders(
@@ -88,7 +88,7 @@ pub trait ExecutionClient {
 pub mod test_util {
     use crate::{
         model::{
-            trade::{SymbolFees, Trade, TradeId},
+            trade::{AssetFees, Trade, TradeId},
             ClientOrderId,
         },
         simulated::exchange::account::order::Orders,
@@ -97,7 +97,7 @@ pub mod test_util {
     use barter_data::subscription::trade::PublicTrade;
     use barter_instrument::{
         exchange::ExchangeId,
-        instrument::{kind::InstrumentKind, Instrument},
+        instrument::market_data::{kind::MarketDataInstrumentKind, MarketDataInstrument},
     };
     use barter_integration::Side;
 
@@ -122,7 +122,11 @@ pub mod test_util {
     ) -> Order<Open> {
         Order {
             exchange: ExchangeId::Other,
-            instrument: Instrument::from(("base", "quote", InstrumentKind::Perpetual)),
+            instrument: MarketDataInstrument::from((
+                "base",
+                "quote",
+                MarketDataInstrumentKind::Perpetual,
+            )),
             cid,
             side,
             state: Open {
@@ -143,11 +147,15 @@ pub mod test_util {
         }
     }
 
-    pub fn trade(id: TradeId, side: Side, price: f64, quantity: f64, fees: SymbolFees) -> Trade {
+    pub fn trade(id: TradeId, side: Side, price: f64, quantity: f64, fees: AssetFees) -> Trade {
         Trade {
             id,
             order_id: OrderId::from("order_id"),
-            instrument: Instrument::from(("base", "quote", InstrumentKind::Perpetual)),
+            instrument: MarketDataInstrument::from((
+                "base",
+                "quote",
+                MarketDataInstrumentKind::Perpetual,
+            )),
             side,
             price,
             quantity,

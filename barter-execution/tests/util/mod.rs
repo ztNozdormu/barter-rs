@@ -13,9 +13,9 @@ use barter_execution::{
     },
 };
 use barter_instrument::{
-    asset::symbol::Symbol,
+    asset::name::AssetNameInternal,
     exchange::ExchangeId,
-    instrument::{kind::InstrumentKind, Instrument},
+    instrument::market_data::{kind::MarketDataInstrumentKind, MarketDataInstrument},
 };
 use barter_integration::Side;
 use std::{collections::HashMap, time::Duration};
@@ -28,7 +28,7 @@ pub(super) async fn run_default_exchange(
     // Define SimulatedExchange available Instruments
     let instruments = instruments();
 
-    // Create initial ClientAccount balances (Symbols must all be included in the Instruments)
+    // Create initial ClientAccount balances (assets must all be included in the Instruments)
     let balances = initial_balances();
 
     // Build SimulatedExchange & run on it's own Tokio task
@@ -59,15 +59,22 @@ pub(super) fn fees_50_percent() -> f64 {
 }
 
 // Instruments that the SimulatedExchange supports
-pub(super) fn instruments() -> Vec<Instrument> {
-    vec![Instrument::from(("btc", "usdt", InstrumentKind::Perpetual))]
+pub(super) fn instruments() -> Vec<MarketDataInstrument> {
+    vec![MarketDataInstrument::from((
+        "btc",
+        "usdt",
+        MarketDataInstrumentKind::Perpetual,
+    ))]
 }
 
-// Initial SimulatedExchange ClientAccount balances for each Symbol
+// Initial SimulatedExchange ClientAccount balances for each asset
 pub(super) fn initial_balances() -> ClientBalances {
     ClientBalances(HashMap::from([
-        (Symbol::from("btc"), Balance::new(10.0, 10.0)),
-        (Symbol::from("usdt"), Balance::new(10_000.0, 10_000.0)),
+        (AssetNameInternal::from("btc"), Balance::new(10.0, 10.0)),
+        (
+            AssetNameInternal::from("usdt"),
+            Balance::new(10_000.0, 10_000.0),
+        ),
     ]))
 }
 
@@ -80,7 +87,7 @@ pub(super) fn order_request_limit<I>(
     quantity: f64,
 ) -> Order<RequestOpen>
 where
-    I: Into<Instrument>,
+    I: Into<MarketDataInstrument>,
 {
     Order {
         exchange: ExchangeId::Simulated,
@@ -106,7 +113,7 @@ pub(super) fn open_order<I>(
     filled: f64,
 ) -> Order<Open>
 where
-    I: Into<Instrument>,
+    I: Into<MarketDataInstrument>,
 {
     Order {
         exchange: ExchangeId::Simulated,
@@ -130,7 +137,7 @@ pub(super) fn order_cancel_request<I, Id>(
     id: Id,
 ) -> Order<RequestCancel>
 where
-    I: Into<Instrument>,
+    I: Into<MarketDataInstrument>,
     Id: Into<OrderId>,
 {
     Order {
@@ -150,7 +157,7 @@ pub(super) fn order_cancelled<I, Id>(
     id: Id,
 ) -> Order<Cancelled>
 where
-    I: Into<Instrument>,
+    I: Into<MarketDataInstrument>,
     Id: Into<OrderId>,
 {
     Order {

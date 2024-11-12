@@ -1,6 +1,6 @@
-use crate::{Cancelled, ExecutionError, Open, Order, RequestCancel, RequestOpen, SymbolBalance};
+use crate::{AssetBalance, Cancelled, ExecutionError, Open, Order, RequestCancel, RequestOpen};
 use barter_data::subscription::trade::PublicTrade;
-use barter_instrument::instrument::Instrument;
+use barter_instrument::instrument::market_data::MarketDataInstrument;
 use tokio::sync::oneshot;
 
 /// Simulated Exchange using public trade `Streams` to model available market liquidity. Liquidity
@@ -20,7 +20,7 @@ pub mod execution;
 #[derive(Debug)]
 pub enum SimulatedEvent {
     FetchOrdersOpen(oneshot::Sender<Result<Vec<Order<Open>>, ExecutionError>>),
-    FetchBalances(oneshot::Sender<Result<Vec<SymbolBalance>, ExecutionError>>),
+    FetchBalances(oneshot::Sender<Result<Vec<AssetBalance>, ExecutionError>>),
     OpenOrders(
         (
             Vec<Order<RequestOpen>>,
@@ -34,5 +34,5 @@ pub enum SimulatedEvent {
         ),
     ),
     CancelOrdersAll(oneshot::Sender<Result<Vec<Order<Cancelled>>, ExecutionError>>),
-    MarketTrade((Instrument, PublicTrade)),
+    MarketTrade((MarketDataInstrument, PublicTrade)),
 }

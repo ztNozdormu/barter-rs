@@ -1,6 +1,8 @@
 use crate::data::MarketMeta;
 use barter_data::event::{DataKind, MarketEvent};
-use barter_instrument::{exchange::ExchangeId, instrument::Instrument, market::Market};
+use barter_instrument::{
+    exchange::ExchangeId, instrument::market_data::MarketDataInstrument, market::Market,
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -17,7 +19,10 @@ pub mod smdatafeed;
 /// May generate an advisory [`Signal`] as a result of analysing an input [`MarketEvent`].
 pub trait SignalGenerator {
     /// Optionally return a [`Signal`] given input [`MarketEvent`].
-    fn generate_signal(&mut self, market: &MarketEvent<Instrument, DataKind>) -> Option<Signal>;
+    fn generate_signal(
+        &mut self,
+        market: &MarketEvent<MarketDataInstrument, DataKind>,
+    ) -> Option<Signal>;
 }
 
 /// Advisory [`Signal`] for a [`Market`] detailing the [`SignalStrength`] associated with each
@@ -26,7 +31,7 @@ pub trait SignalGenerator {
 pub struct Signal {
     pub time: DateTime<Utc>,
     pub exchange: ExchangeId,
-    pub instrument: Instrument,
+    pub instrument: MarketDataInstrument,
     pub signals: HashMap<Decision, SignalStrength>,
     /// Metadata propagated from the [`MarketEvent`] that yielded this [`Signal`].
     pub market_meta: MarketMeta,
@@ -79,7 +84,7 @@ pub struct SignalStrength(pub f64);
 pub struct SignalForceExit {
     pub time: DateTime<Utc>,
     pub exchange: ExchangeId,
-    pub instrument: Instrument,
+    pub instrument: MarketDataInstrument,
 }
 
 impl<M> From<M> for SignalForceExit
@@ -99,7 +104,7 @@ impl SignalForceExit {
     pub fn new<E, I>(exchange: E, instrument: I) -> Self
     where
         E: Into<ExchangeId>,
-        I: Into<Instrument>,
+        I: Into<MarketDataInstrument>,
     {
         Self {
             time: Utc::now(),

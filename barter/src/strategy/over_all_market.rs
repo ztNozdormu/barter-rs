@@ -1,10 +1,7 @@
 use super::{smdatafeed::CandleManager, Decision, Signal, SignalGenerator, SignalStrength};
 use crate::data::MarketMeta;
-use barter_data::{
-    event::{DataKind, MarketEvent},
-    subscription::candle,
-};
-use barter_instrument::instrument::Instrument;
+use barter_data::event::{DataKind, MarketEvent};
+use barter_instrument::instrument::{market_data::MarketDataInstrument, Instrument};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -26,7 +23,7 @@ pub struct OverAllStrategy {
 }
 
 impl SignalGenerator for OverAllStrategy {
-    fn generate_signal(&mut self, market: &MarketEvent<Instrument, DataKind>) -> Option<Signal> {
+    fn generate_signal(&mut self, market: &MarketEvent<MarketDataInstrument, DataKind>) -> Option<Signal> {
         // Check if it's a MarketEvent with a candle
         let candle_close = match &market.kind {
             DataKind::Candle(candle) => candle.close,
