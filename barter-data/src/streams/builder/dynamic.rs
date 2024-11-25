@@ -561,7 +561,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
                 .rxs
                 .tikers
                 .into_iter()
-                .map(|(exchange, rx)| (exchange,rx.into_stream()))
+                .map(|(exchange, rx)| (exchange, rx.into_stream()))
                 .collect(),
         })
     }
@@ -847,7 +847,7 @@ struct Rxs<InstrumentKey> {
     l2s: FnvHashMap<ExchangeId, UnboundedRx<MarketStreamResult<InstrumentKey, OrderBookEvent>>>,
     liquidations:
         FnvHashMap<ExchangeId, UnboundedRx<MarketStreamResult<InstrumentKey, Liquidation>>>,
-    tikers: FnvHashMap<ExchangeId, UnboundedRx<MarketStreamResult<InstrumentKey, Tiker>>>,    
+    tikers: FnvHashMap<ExchangeId, UnboundedRx<MarketStreamResult<InstrumentKey, Tiker>>>,
 }
 
 impl<InstrumentKey> Default for Rxs<InstrumentKey> {

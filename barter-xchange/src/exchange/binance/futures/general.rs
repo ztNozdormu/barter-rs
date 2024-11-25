@@ -1,16 +1,19 @@
+use barter_integration::protocol::http::rest::client::RestClient;
 use error_chain::bail;
 
-
-use crate::exchange::{binance::{api::{Futures, API}, model::ExchangeInformation}, errors::{ErrorKind, Result}};
-use barter_integration::{metric, protocol::http::rest::client::RestClient};
-use std::collections::BTreeMap;
-
-use crate::{config::Config, exchange::binance::{api::{BinanceParser, RequestUnsinger}, model::{FetchCandlesRequest, FetchCandlesResponse, KlineSummaries, KlineSummary}}};
-
+use crate::{
+    config::Config,
+    exchange::{
+        binance::{
+            api::{BinanceParser, Futures, RequestUnsinger, API},
+            model::{ExchangeInformation, FetchCommonRequest, Symbol},
+        },
+        errors::{ErrorKind, Result},
+    },
+};
 
 #[derive(Clone)]
-pub struct FuturesGeneral {
-}
+pub struct FuturesGeneral {}
 
 impl FuturesGeneral {
     // Test connectivity
@@ -27,17 +30,46 @@ impl FuturesGeneral {
 
     // Obtain exchange information
     // - Current exchange trading rules and symbol information
-    pub fn exchange_info(&self) -> Result<ExchangeInformation> {
-        self.client.get(API::Futures(Futures::ExchangeInfo), None)
+    pub async fn exchange_info(&self) -> Result<ExchangeInformation> {
+        // 参数处理
+        let config = Config::default();
+
+        let rug = RequestUnsinger {};
+
+        let url: String = API::Futures(Futures::ExchangeInfo).into();
+        let url = Box::leak(url.into_boxed_str());
+
+        let fetch_candles_request = FetchCommonRequest(url);
+        // // Build RestClient with Ftx configuration
+        let rest_client = RestClient::new(config.futures_rest_api_endpoint, rug, BinanceParser);
+
+        let response: std::result::Result<
+            (
+                crate::exchange::binance::model::FetchCommonResponse,
+                barter_integration::metric::Metric,
+            ),
+            crate::exchange::errors::ExecutionError,
+        > = rest_client.execute(fetch_candles_request).await;
+        match response {
+            Ok((data, metric)) => {
+                println!("Success: {:?}", data.0);
+                println!("Metric: {:?}", metric);
+                Ok(data.0)
+            }
+            Err(e) => {
+                println!("Errorm: {}", e);
+                Err(ErrorKind::MarketError(e).into())
+            }
+        }
     }
 
     // Get Symbol information
-    pub fn get_symbol_info<S>(&self, symbol: S) -> Result<Symbol>
+    pub async fn get_symbol_info<S>(&self, symbol: S) -> Result<Symbol>
     where
         S: Into<String>,
     {
         let upper_symbol = symbol.into().to_uppercase();
-        match self.exchange_info() {
+        match self.exchange_info().await {
             Ok(info) => {
                 for item in info.symbols {
                     if item.symbol == upper_symbol {
@@ -50,10 +82,9 @@ impl FuturesGeneral {
         }
     }
 
-    // Get All Symbol information
-    pub fn get_symbols(&self) -> Result<Vec<Symbol>>
-    {
-        match self.exchange_info() {
+    // Get all Symbol information
+    pub async fn get_symbol_infos<S>(&self) -> Result<Vec<Symbol>> {
+        match self.exchange_info().await {
             Ok(info) => Ok(info.symbols),
             Err(e) => Err(e),
         }

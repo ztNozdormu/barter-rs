@@ -1,3 +1,4 @@
+use super::api::BinanceParser;
 use crate::exchange::errors::{Error, ErrorKind, ExecutionError, Result};
 use barter_data::subscription::tiker::Tiker;
 use barter_integration::{
@@ -7,7 +8,6 @@ use barter_integration::{
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
-use super::api::BinanceParser;
 use std::{borrow::Cow, collections::BTreeMap};
 
 #[derive(Deserialize, Clone)]
@@ -1001,6 +1001,33 @@ pub struct IndexKlineEvent {
     #[serde(rename = "k")]
     pub kline: IndexKline,
 }
+// ********************************************************************
+//              Binance Futures Common Data Fetch Define Struct Start
+// ********************************************************************
+// 市场数据对应模型定义
+pub struct FetchCommonRequest(pub &'static str);
+
+impl RestRequest for FetchCommonRequest {
+    type Response = FetchCommonResponse; // Define Response type
+    type QueryParams = BTreeMap<String, String>; // FetchBalances does not require any QueryParams
+    type Body = (); // FetchBalances does not require any Body
+
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(&self.0)
+    }
+
+    fn method() -> reqwest::Method {
+        reqwest::Method::GET
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+pub struct FetchCommonResponse(pub ExchangeInformation);
+
+// ********************************************************************
+//              Binance Futures Common Data Fetch Define Struct End
+// ********************************************************************
 
 // ********************************************************************
 //              Binance Futures Kline Data Fetch Define Struct Start

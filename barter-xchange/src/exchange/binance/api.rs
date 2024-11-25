@@ -1,12 +1,12 @@
-
+use crate::{config::Config, exchange::binance::futures::market::FuturesMarket};
 use barter_integration::{
     error::SocketError,
     protocol::http::{rest::RestRequest, BuildStrategy},
 };
 use chrono::{DateTime, Utc};
 use std::borrow::Cow;
-use crate::exchange::binance::futures::market::FuturesMarket;
-use crate::config::Config;
+
+use super::futures::general::FuturesGeneral;
 
 #[allow(clippy::all)]
 pub enum API {
@@ -165,6 +165,26 @@ impl Binance for FuturesMarket {
             //     config.futures_rest_api_endpoint.clone(),
             // ),
             recv_window: config.recv_window,
+        }
+    }
+}
+
+impl Binance for FuturesGeneral {
+    fn new(api_key: Option<String>, secret_key: Option<String>) -> FuturesGeneral {
+        Self::new_with_config(api_key, secret_key, &Config::default())
+    }
+
+    fn new_with_config(
+        api_key: Option<String>,
+        secret_key: Option<String>,
+        config: &Config,
+    ) -> FuturesGeneral {
+        FuturesGeneral {
+            // client: Client::new(
+            //     api_key,
+            //     secret_key,
+            //     config.futures_rest_api_endpoint.clone(),
+            // ),
         }
     }
 }
