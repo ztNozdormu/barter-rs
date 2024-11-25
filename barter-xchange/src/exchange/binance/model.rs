@@ -1001,6 +1001,30 @@ pub struct IndexKlineEvent {
     #[serde(rename = "k")]
     pub kline: IndexKline,
 }
+// ********************************************************************
+//              Binance Futures Common Data Fetch Define Struct Start
+// ********************************************************************
+// 市场数据对应模型定义
+pub struct FetchCommonRequest(pub &'static str);
+
+impl RestRequest for FetchCommonRequest {
+    type Response = FetchCandlesResponse; // Define Response type
+    type QueryParams = BTreeMap<String, String>; // FetchBalances does not require any QueryParams
+    type Body = (); // FetchBalances does not require any Body
+
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(&self.0)
+    }
+
+    fn method() -> reqwest::Method {
+        reqwest::Method::GET
+    }
+}
+
+
+// ********************************************************************
+//              Binance Futures Common Data Fetch Define Struct End
+// ********************************************************************
 
 // ********************************************************************
 //              Binance Futures Kline Data Fetch Define Struct Start

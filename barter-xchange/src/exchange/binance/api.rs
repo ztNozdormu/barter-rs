@@ -8,6 +8,8 @@ use std::borrow::Cow;
 use crate::exchange::binance::futures::market::FuturesMarket;
 use crate::config::Config;
 
+use super::futures::general::FuturesGeneral;
+
 #[allow(clippy::all)]
 pub enum API {
     Futures(Futures),
@@ -168,6 +170,27 @@ impl Binance for FuturesMarket {
         }
     }
 }
+
+impl Binance for FuturesGeneral {
+    fn new(api_key: Option<String>, secret_key: Option<String>) -> FuturesGeneral {
+        Self::new_with_config(api_key, secret_key, &Config::default())
+    }
+
+    fn new_with_config(
+        api_key: Option<String>,
+        secret_key: Option<String>,
+        config: &Config,
+    ) -> FuturesGeneral {
+        FuturesGeneral {
+            // client: Client::new(
+            //     api_key,
+            //     secret_key,
+            //     config.futures_rest_api_endpoint.clone(),
+            // ),
+        }
+    }
+}
+
 
 // *************************************************************
 //              Binance Futures Data Fetch Common Define  End
