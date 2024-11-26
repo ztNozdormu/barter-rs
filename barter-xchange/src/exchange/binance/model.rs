@@ -6,7 +6,7 @@ use barter_integration::{
     protocol::http::{rest::RestRequest, HttpParser},
 };
 use reqwest::StatusCode;
-use serde::{Deserialize, Serialize};
+use serde::{de::value, Deserialize, Serialize};
 use serde_json::{from_value, Value};
 use std::{borrow::Cow, collections::BTreeMap};
 
@@ -19,7 +19,7 @@ pub struct ServerTime {
     pub server_time: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone,Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ExchangeInformation {
     pub timezone: String,
@@ -47,9 +47,9 @@ pub struct Symbol {
     pub quote_asset: String,
     pub quote_precision: u64,
     pub order_types: Vec<String>,
-    pub iceberg_allowed: bool,
-    pub is_spot_trading_allowed: bool,
-    pub is_margin_trading_allowed: bool,
+    pub iceberg_allowed: Option<bool>,
+    pub is_spot_trading_allowed: Option<bool>,
+    pub is_margin_trading_allowed: Option<bool>,
     pub filters: Vec<Filters>,
 }
 
@@ -1023,7 +1023,7 @@ impl RestRequest for FetchCommonRequest {
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
-pub struct FetchCommonResponse(pub ExchangeInformation);
+pub struct FetchCommonResponse(pub Value);
 
 // ********************************************************************
 //              Binance Futures Common Data Fetch Define Struct End

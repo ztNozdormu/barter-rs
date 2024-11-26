@@ -1,7 +1,10 @@
+use std::{arch::x86_64::_CMP_GE_OS, fmt::Debug, future::IntoFuture, io::ErrorKind};
+
 use self::rest::RestRequest;
 use crate::error::SocketError;
-use reqwest::StatusCode;
+use reqwest::{Response, StatusCode};
 use serde::de::DeserializeOwned;
+use tokio_tungstenite::tungstenite::http::status;
 use tracing::error;
 
 /// Defines an abstract [`RestRequest`] that can be executed by a fully
@@ -45,7 +48,7 @@ pub trait HttpParser {
     type ApiError: DeserializeOwned;
     type OutputError: From<SocketError>;
 
-    /// Attempt to parse a [`StatusCode`] & bytes payload into a deserialisable `Response`.
+    // Attempt to parse a [`StatusCode`] & bytes payload into a deserialisable `Response`.
     fn parse<Response>(
         &self,
         status: StatusCode,
