@@ -88,7 +88,7 @@ impl FuturesGeneral {
     }
 
     // Get all Symbol information
-    pub async fn get_symbol_infos<S>(&self) -> Result<Vec<Symbol>> {
+    pub async fn get_symbol_infos(&self) -> Result<Vec<Symbol>> {
         match self.exchange_info().await {
             Ok(info) => Ok(info.symbols),
             Err(e) => Err(e),
