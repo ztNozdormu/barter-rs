@@ -1,10 +1,7 @@
-use std::{arch::x86_64::_CMP_GE_OS, fmt::Debug, future::IntoFuture, io::ErrorKind};
-
 use self::rest::RestRequest;
 use crate::error::SocketError;
-use reqwest::{Response, StatusCode};
+use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
-use tokio_tungstenite::tungstenite::http::status;
 use tracing::error;
 
 /// Defines an abstract [`RestRequest`] that can be executed by a fully
