@@ -1,12 +1,12 @@
 use super::api::BinanceParser;
-use crate::exchange::errors::{Error, ErrorKind, ExecutionError, Result};
+use crate::exchange::errors::{Error, ErrorKind, ExecutionError, KVParseError, Result}; // ErrorKind::{KlineValueParseError,KlineValueMissingError}
 use barter_data::subscription::tiker::Tiker;
 use barter_integration::{
     error::SocketError,
     protocol::http::{rest::RestRequest, HttpParser},
 };
 use reqwest::StatusCode;
-use serde::{de::value, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{from_value, Value};
 use std::{borrow::Cow, collections::BTreeMap};
 
@@ -1033,36 +1033,76 @@ pub struct FetchCommonResponse(pub Value);
 //              Binance Futures Kline Data Fetch Define Struct Start
 // ********************************************************************
 
+// #[derive(Debug, Serialize, Deserialize, Clone)]
+// pub struct KlineSummary {
+//     pub open_time: i64,
+
+//     pub open: String,
+
+//     pub high: String,
+
+//     pub low: String,
+
+//     pub close: String,
+
+//     pub volume: String,
+
+//     pub close_time: i64,
+
+//     pub quote_asset_volume: String,
+
+//     pub number_of_trades: i64,
+
+//     pub taker_buy_base_asset_volume: String,
+
+//     pub taker_buy_quote_asset_volume: String,
+// }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct KlineSummary {
     pub open_time: i64,
 
-    pub open: String,
+    pub open: f64,
 
-    pub high: String,
+    pub high: f64,
 
-    pub low: String,
+    pub low: f64,
 
-    pub close: String,
+    pub close: f64,
 
-    pub volume: String,
+    pub volume: f64,
 
     pub close_time: i64,
 
-    pub quote_asset_volume: String,
+    pub quote_asset_volume: f64,
 
     pub number_of_trades: i64,
 
-    pub taker_buy_base_asset_volume: String,
+    pub taker_buy_base_asset_volume: f64,
 
-    pub taker_buy_quote_asset_volume: String,
+    pub taker_buy_quote_asset_volume: f64,
 }
 
+// ErrorKind::{KlineValueParseError,KlineValueMissingError}
 fn get_value(row: &[Value], index: usize, name: &'static str) -> Result<Value> {
     Ok(row
         .get(index)
         .ok_or_else(|| ErrorKind::KlineValueMissingError(index, name))?
         .clone())
+}
+
+fn cus_from_value(value: &Value) -> Result<f64> {//where T: DeserializeOwned,
+    match value {
+        Value::String(s) => {
+            // 尝试将字符串解析为 f64
+            s.trim().parse::<f64>().map_err(|err| ErrorKind::KlineValueParseError(KVParseError::ParseError(err)))
+        }
+        Value::Number(n) => {
+            // 尝试直接转换数字
+            n.as_f64().ok_or_else(|| ErrorKind::KlineValueParseError(KVParseError::InvalidType(format!("Number: {:?}", n))))
+        }
+        _ => Err(ErrorKind::KlineValueParseError(KVParseError::InvalidType(format!("Unsupported Value type: {:?}", value)))),
+    }
 }
 
 impl TryFrom<&Vec<Value>> for KlineSummary {
@@ -1093,15 +1133,41 @@ impl TryFrom<&Vec<Value>> for KlineSummary {
     }
 }
 
+// impl KlineSummary {
+//     pub fn new(tiker: Tiker) -> Self {
+//         Self {
+//             close_time: tiker.close_time.timestamp(),
+//             open: tiker.open.to_string(),
+//             high: tiker.high.to_string(),
+//             low: tiker.low.to_string(),
+//             close: tiker.last_price.to_string(),
+//             volume: tiker.volume.to_string(),
+//             open_time: todo!(),
+//             quote_asset_volume: todo!(),
+//             number_of_trades: todo!(),
+//             taker_buy_base_asset_volume: todo!(),
+//             taker_buy_quote_asset_volume: todo!(),
+//         }
+//     }
+//     pub fn update(&mut self, tiker: Tiker) {
+//         self.close_time = tiker.close_time.timestamp();
+//         self.open = tiker.open.to_string();
+//         self.high = tiker.high.to_string();
+//         self.low = tiker.low.to_string();
+//         self.close = tiker.last_price.to_string();
+//         self.volume = tiker.volume.to_string();
+//     }
+// }
+
 impl KlineSummary {
     pub fn new(tiker: Tiker) -> Self {
         Self {
             close_time: tiker.close_time.timestamp(),
-            open: tiker.open.to_string(),
-            high: tiker.high.to_string(),
-            low: tiker.low.to_string(),
-            close: tiker.last_price.to_string(),
-            volume: tiker.volume.to_string(),
+            open: tiker.open,
+            high: tiker.high,
+            low: tiker.low,
+            close: tiker.last_price,
+            volume: tiker.volume,
             open_time: todo!(),
             quote_asset_volume: todo!(),
             number_of_trades: todo!(),
@@ -1111,11 +1177,11 @@ impl KlineSummary {
     }
     pub fn update(&mut self, tiker: Tiker) {
         self.close_time = tiker.close_time.timestamp();
-        self.open = tiker.open.to_string();
-        self.high = tiker.high.to_string();
-        self.low = tiker.low.to_string();
-        self.close = tiker.last_price.to_string();
-        self.volume = tiker.volume.to_string();
+        self.open = tiker.open;
+        self.high = tiker.high;
+        self.low = tiker.low;
+        self.close = tiker.last_price;
+        self.volume = tiker.volume;
     }
 }
 
