@@ -5,9 +5,9 @@ use crate::{
 };
 use bytes::Bytes;
 use chrono::Utc;
-use tokio_tungstenite::tungstenite::http::status;
-use std::borrow::Cow;
 use reqwest::Response;
+use std::borrow::Cow;
+use tokio_tungstenite::tungstenite::http::status;
 
 /// Configurable REST client capable of executing signed [`RestRequest`]s. Use this when
 /// integrating APIs that require Http in order to interact with resources. Each API will require
@@ -57,7 +57,7 @@ where
 
         // Attempt to parse API Success or Error response
         self.parser
-            .parse::<Request::Response>(status_code,&payload)
+            .parse::<Request::Response>(status_code, &payload)
             .map(|response| (response, latency))
     }
 
@@ -128,7 +128,6 @@ where
         Ok((status_code, payload, latency))
     }
 }
-
 
 impl<'a, Strategy, Parser> RestClient<'a, Strategy, Parser> {
     /// Construct a new [`Self`] using the provided configuration.

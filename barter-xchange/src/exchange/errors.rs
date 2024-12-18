@@ -18,6 +18,7 @@ pub enum ExecutionError {
     Socket(#[from] SocketError),
 }
 
+
 error_chain! {
     errors {
         ExchangeError(response: ExchangeContentError)
@@ -25,6 +26,9 @@ error_chain! {
         KlineValueMissingError(index: usize, name: &'static str) {
             description("invalid Vec for Kline"),
             display("{} at {} is missing", name, index),
+        }
+        KlineValueParseError(desc: String) {
+            display("{}",desc),
         }
 
         MarketError(response: ExecutionError)
