@@ -37,7 +37,7 @@ use barter_integration::{
     Validator,
 };
 use fnv::FnvHashMap;
-use futures::{stream::SelectAll, Stream};
+use futures::{stream::{select_all, SelectAll}, Stream};
 use futures_util::{future::try_join_all, StreamExt};
 use itertools::Itertools;
 use std::{
@@ -241,7 +241,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
                                         )
                                         .await
                                         .map(|stream| {
-                                            tokio::spawn(stream.boxed().forward_to(
+                                            tokio::spawn(stream.forward_to(
                                                 txs.tikers.get(&exchange).unwrap().clone(),
                                             ))
                                         })

@@ -1,10 +1,13 @@
 use super::SubscriptionKind;
+use barter_macro::{DeSubKind, SerSubKind};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Barter [`Subscription`](super::Subscription) [`SubscriptionKind`] that yields [`Tiker`]
 /// [`MarketEvent<T>`](crate::event::MarketEvent) events.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, DeSubKind, SerSubKind,
+)]
 pub struct Tikers;
 
 impl SubscriptionKind for Tikers {
@@ -40,4 +43,12 @@ pub struct Tiker {
     pub first_id: u64,
     pub last_id: u64,
     pub count: u64,
+}
+
+
+
+impl std::fmt::Display for Tikers {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
 }

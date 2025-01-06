@@ -6,12 +6,13 @@ use crate::{
     exchange::{Connector, ExchangeServer, ExchangeSub, StreamSelector},
     instrument::InstrumentData,
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
-    subscription::{book::OrderBooksL1, trade::PublicTrades, Map},
+    subscription::{book::OrderBooksL1, tiker::{Tiker, Tikers}, trade::PublicTrades, Map},
     transformer::stateless::StatelessTransformer,
     ExchangeWsStream, NoInitialSnapshots,
 };
 use barter_instrument::exchange::ExchangeId;
 use barter_integration::{error::SocketError, protocol::websocket::WsMessage};
+use futures::tiker::BinanceTiker;
 use std::{fmt::Debug, marker::PhantomData};
 use url::Url;
 
@@ -117,6 +118,17 @@ where
     type SnapFetcher = NoInitialSnapshots;
     type Stream = ExchangeWsStream<
         StatelessTransformer<Self, Instrument::Key, OrderBooksL1, BinanceOrderBookL1>,
+    >;
+}
+
+impl<Instrument, Server> StreamSelector<Instrument, Tikers> for Binance<Server>
+where
+    Instrument: InstrumentData,
+    Server: ExchangeServer + Debug + Send + Sync,
+{
+    type SnapFetcher = NoInitialSnapshots;
+    type Stream = ExchangeWsStream<
+        StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTiker>,
     >;
 }
 

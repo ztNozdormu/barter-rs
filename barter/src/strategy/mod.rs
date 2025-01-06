@@ -30,21 +30,6 @@ use std::marker::PhantomData;
 /// on the current `EngineState`.
 pub mod algo;
 
-<<<<<<< HEAD
-/// Barter ewo strategy [`SignalGenerator`] implementation.
-pub mod over_all_market;
-
-// Barter market data implementation.
-pub mod smdatafeed;
-
-/// May generate an advisory [`Signal`] as a result of analysing an input [`MarketEvent`].
-pub trait SignalGenerator {
-    /// Optionally return a [`Signal`] given input [`MarketEvent`].
-    fn generate_signal(
-        &mut self,
-        market: &MarketEvent<MarketDataInstrument, DataKind>,
-    ) -> Option<Signal>;
-=======
 /// Defines a strategy interface for generating open and cancel order requests that close open
 /// positions.
 pub mod close_positions;
@@ -70,7 +55,6 @@ pub mod on_trading_disabled;
 pub struct DefaultStrategy<State> {
     pub id: StrategyId,
     phantom: PhantomData<State>,
->>>>>>> develop
 }
 
 impl<State> Default for DefaultStrategy<State> {

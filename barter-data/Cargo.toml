@@ -37,7 +37,6 @@ reqwest = { workspace = true }
 
 # Error
 thiserror = { workspace = true }
-error-chain = { version = "0.12.4", default-features = false }
 
 # SerDe
 serde = { workspace = true, features = ["derive"] }
@@ -47,12 +46,6 @@ serde_json = { workspace = true }
 parking_lot = { workspace = true }
 rust_decimal = { workspace = true, features = ["serde-with-str"] }
 smol_str = { workspace = true, features = ["serde"] }
-<<<<<<< HEAD
-=======
-
-# Strategy
-ta = { workspace = true }
->>>>>>> c7b6f9f183e07439672aa0750f3c64c31c6561fe
 
 # Misc
 chrono = { workspace = true, features = ["serde"] }

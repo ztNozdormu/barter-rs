@@ -2,10 +2,7 @@ use crate::{
     error::DataError,
     streams::consumer::MarketStreamResult,
     subscription::{
-        book::{OrderBookEvent, OrderBookL1},
-        candle::Candle,
-        liquidation::Liquidation,
-        trade::PublicTrade,
+        book::{OrderBookEvent, OrderBookL1}, candle::Candle, liquidation::Liquidation, tiker::Tiker, trade::PublicTrade
     },
 };
 use barter_instrument::{exchange::ExchangeId, instrument::market_data::MarketDataInstrument};
@@ -80,6 +77,7 @@ pub enum DataKind {
     OrderBook(OrderBookEvent),
     Candle(Candle),
     Liquidation(Liquidation),
+    Tiker(Tiker),
 }
 
 impl DataKind {
@@ -90,6 +88,7 @@ impl DataKind {
             DataKind::OrderBook(_) => "l2",
             DataKind::Candle(_) => "candle",
             DataKind::Liquidation(_) => "liquidation",
+            DataKind::Tiker(_) => "ticker",
         }
     }
 }
@@ -171,5 +170,21 @@ impl<InstrumentKey> From<MarketEvent<InstrumentKey, Liquidation>>
 {
     fn from(value: MarketEvent<InstrumentKey, Liquidation>) -> Self {
         value.map_kind(Liquidation::into)
+    }
+}
+
+impl<InstrumentKey> From<MarketStreamResult<InstrumentKey, Tiker>>
+    for MarketStreamResult<InstrumentKey, DataKind>
+{
+    fn from(value: MarketStreamResult<InstrumentKey, Tiker>) -> Self {
+        value.map_ok(MarketEvent::from)
+    }
+}
+
+impl<InstrumentKey> From<MarketEvent<InstrumentKey, Tiker>>
+    for MarketEvent<InstrumentKey, DataKind>
+{
+    fn from(value: MarketEvent<InstrumentKey, Tiker>) -> Self {
+        value.map_kind(Tiker::into)
     }
 }
