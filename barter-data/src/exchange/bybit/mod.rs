@@ -21,7 +21,7 @@ use tokio::time;
 use url::Url;
 
 /// Defines the type that translates a Barter [`Subscription`](crate::subscription::Subscription)
-/// into an exchange [`Connector`] specific channel used for generating [`Connector::requests`].
+/// into an execution [`Connector`] specific channel used for generating [`Connector::requests`].
 pub mod channel;
 
 /// [`ExchangeServer`] and [`StreamSelector`] implementations for
@@ -29,7 +29,7 @@ pub mod channel;
 pub mod futures;
 
 /// Defines the type that translates a Barter [`Subscription`](crate::subscription::Subscription)
-/// into an exchange [`Connector`] specific market used for generating [`Connector::requests`].
+/// into an execution [`Connector`] specific market used for generating [`Connector::requests`].
 pub mod market;
 
 /// Generic [`BybitPayload<T>`](message::BybitPayload) type common to
@@ -49,7 +49,7 @@ pub mod subscription;
 /// [`BybitFuturesUsd`](futures::BybitPerpetualsUsd).
 pub mod trade;
 
-/// Generic [`Bybit<Server>`](Bybit) exchange.
+/// Generic [`Bybit<Server>`](Bybit) execution.
 ///
 /// ### Notes
 /// A `Server` [`ExchangeServer`] implementations exists for
@@ -78,7 +78,7 @@ where
         Some(PingInterval {
             interval: time::interval(Duration::from_millis(5_000)),
             ping: || {
-                WsMessage::Text(
+                WsMessage::text(
                     serde_json::json!({
                         "op": "ping",
                     })
@@ -94,7 +94,7 @@ where
             .map(|sub| format!("{}.{}", sub.channel.as_ref(), sub.market.as_ref(),))
             .collect::<Vec<String>>();
 
-        vec![WsMessage::Text(
+        vec![WsMessage::text(
             serde_json::json!({
                 "op": "subscribe",
                 "args": stream_names

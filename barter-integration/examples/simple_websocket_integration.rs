@@ -1,7 +1,8 @@
 use barter_integration::{
     error::SocketError,
     protocol::websocket::{WebSocket, WebSocketParser, WsMessage},
-    ExchangeStream, Transformer,
+    stream::ExchangeStream,
+    Transformer,
 };
 use futures::{SinkExt, StreamExt};
 use serde::{de, Deserialize};
@@ -69,7 +70,7 @@ async fn main() {
 
     // Send something over the socket (eg/ Binance trades subscription)
     binance_conn
-        .send(WsMessage::Text(
+        .send(WsMessage::text(
             json!({"method": "SUBSCRIBE","params": ["btcusdt@aggTrade"],"id": 1}).to_string(),
         ))
         .await

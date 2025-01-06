@@ -3,7 +3,6 @@ use barter_data::{
         binance::{futures::BinanceFuturesUsd, spot::BinanceSpot},
         bitmex::Bitmex,
         bybit::{futures::BybitPerpetualsUsd, spot::BybitSpot},
-        coinbase::Coinbase,
         gateio::{
             option::GateioOptions,
             perpetual::{GateioPerpetualsBtc, GateioPerpetualsUsd},
@@ -45,6 +44,7 @@ async fn main() {
         ])
 
         .subscribe([
+<<<<<<< HEAD
             (Coinbase, "btc", "usd", MarketDataInstrumentKind::Spot, PublicTrades),
             (Coinbase, "eth", "usd", MarketDataInstrumentKind::Spot, PublicTrades),
         ])
@@ -82,6 +82,40 @@ async fn main() {
         ])
 
         .subscribe([
+=======
+            (GateioSpot::default(), "btc", "usdt", MarketDataInstrumentKind::Spot, PublicTrades),
+        ])
+
+        .subscribe([
+            (GateioPerpetualsUsd::default(), "btc", "usdt", MarketDataInstrumentKind::Perpetual, PublicTrades),
+        ])
+
+        .subscribe([
+            (GateioPerpetualsBtc::default(), "btc", "usd", MarketDataInstrumentKind::Perpetual, PublicTrades),
+        ])
+
+        .subscribe([
+            (GateioOptions::default(), "btc", "usdt", MarketDataInstrumentKind::Option(put_contract()), PublicTrades),
+        ])
+
+        .subscribe([
+            (Okx, "btc", "usdt", MarketDataInstrumentKind::Spot, PublicTrades),
+            (Okx, "btc", "usdt", MarketDataInstrumentKind::Perpetual, PublicTrades),
+            (Okx, "btc", "usd", MarketDataInstrumentKind::Future(future_contract()), PublicTrades),
+            (Okx, "btc", "usd", MarketDataInstrumentKind::Option(call_contract()), PublicTrades),
+        ])
+
+        .subscribe([
+            (BybitSpot::default(), "btc", "usdt", MarketDataInstrumentKind::Spot, PublicTrades),
+            (BybitSpot::default(), "eth", "usdt", MarketDataInstrumentKind::Spot, PublicTrades),
+        ])
+
+        .subscribe([
+            (BybitPerpetualsUsd::default(), "btc", "usdt", MarketDataInstrumentKind::Perpetual, PublicTrades),
+        ])
+
+        .subscribe([
+>>>>>>> a8ccee8c0f0a560f9292de1887585506c34194c1
             (Bitmex, "xbt", "usd", MarketDataInstrumentKind::Perpetual, PublicTrades)
         ])
 
