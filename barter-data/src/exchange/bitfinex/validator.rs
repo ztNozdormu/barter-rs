@@ -47,7 +47,7 @@ impl SubscriptionValidator for BitfinexWebSocketSubValidator {
         Instrument: Send,
         Kind: SubscriptionKind + Send,
     {
-        // Establish exchange specific subscription validation parameters
+        // Establish execution specific subscription validation parameters
         let timeout = Exchange::subscription_timeout();
         let expected_responses = Exchange::expected_responses(&instrument_map);
 
@@ -64,7 +64,7 @@ impl SubscriptionValidator for BitfinexWebSocketSubValidator {
             if success_responses == expected_responses
                 && init_snapshots_received == expected_responses
             {
-                debug!(exchange = %Exchange::ID, "validated exchange WebSocket subscriptions");
+                debug!(exchange = %Exchange::ID, "validated execution WebSocket subscriptions");
                 break Ok((instrument_map, buff_active_subscription_events));
             }
 
@@ -125,7 +125,7 @@ impl SubscriptionValidator for BitfinexWebSocketSubValidator {
                         Some(Err(SocketError::Deserialise { error: _, payload })) if success_responses >= 1 => {
                             // Already active Bitfinex subscriptions will send initial snapshots
                             init_snapshots_received += 1;
-                            buff_active_subscription_events.push(WsMessage::Text(payload));
+                            buff_active_subscription_events.push(WsMessage::text(payload));
                             continue
                         }
                         Some(Err(SocketError::Terminated(close_frame))) => {

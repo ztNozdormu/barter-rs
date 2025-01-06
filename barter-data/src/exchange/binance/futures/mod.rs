@@ -13,7 +13,7 @@ use crate::{
     ExchangeWsStream, NoInitialSnapshots,
 };
 use barter_instrument::exchange::ExchangeId;
-use tiker::BinanceTiker;
+use std::fmt::{Display, Formatter};
 
 /// Level 2 OrderBook types.
 pub mod l2;
@@ -29,7 +29,7 @@ pub mod tiker;
 /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#websocket-market-streams>
 pub const WEBSOCKET_BASE_URL_BINANCE_FUTURES_USD: &str = "wss://fstream.binance.com/ws";
 
-/// [`Binance`] perpetual usd exchange.
+/// [`Binance`] perpetual usd execution.
 pub type BinanceFuturesUsd = Binance<BinanceServerFuturesUsd>;
 
 /// [`Binance`] perpetual usd [`ExchangeServer`].
@@ -62,11 +62,8 @@ where
     >;
 }
 
-impl<Instrument> StreamSelector<Instrument, Tikers> for BinanceFuturesUsd
-where
-    Instrument: InstrumentData,
-{
-    type SnapFetcher = NoInitialSnapshots;
-    type Stream =
-        ExchangeWsStream<StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTiker>>;
+impl Display for BinanceFuturesUsd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "BinanceFuturesUsd")
+    }
 }
