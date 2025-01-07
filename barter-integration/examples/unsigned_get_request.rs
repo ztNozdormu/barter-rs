@@ -1,15 +1,12 @@
-use barter_instrument::asset::symbol::Symbol;
+use barter_instrument::asset::name::AssetNameInternal;
 use barter_integration::{
     error::SocketError,
     protocol::http::{
-        private::{encoder::HexEncoder, RequestSigner, Signer},
-        rest::{client::RestClient, RestRequest},
-        HttpParser,
+        rest::{client::RestClient, RestRequest}, BuildStrategy, HttpParser
     },
 };
-use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
-use reqwest::{RequestBuilder, StatusCode};
+use reqwest::StatusCode;
 use serde::Deserialize;
 use std::borrow::Cow;
 use thiserror::Error;
@@ -70,12 +67,22 @@ struct FetchBalancesResponse {
 #[allow(dead_code)]
 struct FtxBalance {
     #[serde(rename = "coin")]
-    symbol: Symbol,
+    symbol: AssetNameInternal,
     total: f64,
 }
 
 struct RequestUnsinger {}
-impl BuildStrategy for RequestUnsinger {}
+impl BuildStrategy for RequestUnsinger {
+    fn build<Request>(
+        &self,
+        request: Request,
+        builder: reqwest::RequestBuilder,
+    ) -> Result<reqwest::Request, SocketError>
+    where
+        Request: RestRequest {
+        todo!()
+    }
+}
 /// See Barter-Execution for a comprehensive real-life example, as well as code you can use out of the
 /// box to execute trades on many exchanges.
 #[tokio::main]
@@ -87,7 +94,7 @@ async fn main() {
     let request_signer = RequestUnsinger {};
 
     // Build RestClient with Ftx configuration
-    let rest_client = RestClient::new("https://ftx.com", request_signer, FtxParser);
+    let rest_client = RestClient::new("https://ftx.com", request_signer, BinanceParser);
 
     // Fetch Result<FetchBalancesResponse, ExecutionError>
     let _response = rest_client.execute(FetchBalancesRequest).await;
