@@ -107,4 +107,28 @@ impl FuturesMarket {
             }
         }
     }
+
+    pub async fn last_kline<S1, S2, S3, S4, S5>(
+        &self,
+        symbol: S1,
+        interval: S2,
+    ) -> Result<KlineSummary> 
+    where
+        S1: Into<String>,
+        S2: Into<String>,
+        {
+
+        // 调用 `get_klines` 获取结果
+        if let Ok(KlineSummaries::AllKlineSummaries(res)) = self.get_klines(symbol, interval, 1, None, None).await {
+            if res.len() == 1 {
+                Ok(res.into_iter().next().unwrap()) // 返回唯一元素
+            } else {
+                Err(ErrorKind::MarketError(e).into())
+                // Err(anyhow!("Expected exactly one element, found {}", res.len()))
+            }
+        } else {
+            Err(ErrorKind::MarketError(e).into())
+            // Err(anyhow!("Error fetching klines"))
+        }
+    }
 }
