@@ -108,11 +108,7 @@ impl FuturesMarket {
         }
     }
 
-    pub async fn last_kline<S1, S2, S3, S4, S5>(
-        &self,
-        symbol: S1,
-        interval: S2,
-    ) -> Result<KlineSummary>
+    pub async fn last_kline<S1, S2>(&self, symbol: S1, interval: S2) -> Result<KlineSummary>
     where
         S1: Into<String>,
         S2: Into<String>,
@@ -134,6 +130,6 @@ impl FuturesMarket {
                 "fetching last kline data error".to_string(),
             ))
             .into())
-       }
+        }
     }
 }
