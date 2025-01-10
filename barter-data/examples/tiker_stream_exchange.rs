@@ -3,7 +3,7 @@ use barter_data::{
     streams::{reconnect::stream::ReconnectingStream, Streams},
     subscription::tiker::Tikers,
 };
-use barter_instrument::instrument::kind::InstrumentKind;
+use barter_instrument::instrument::market_data::kind::MarketDataInstrumentKind;
 use futures::StreamExt;
 use tracing::{info, warn};
 
@@ -22,8 +22,8 @@ async fn main() {
     // '--> each call to StreamBuilder::subscribe() creates a separate WebSocket connection
     let streams = Streams::<Tikers>::builder()
         .subscribe([
-            (BinanceFuturesUsd::default(), "btc", "usdt", InstrumentKind::Perpetual, Tikers),
-            (BinanceFuturesUsd::default(), "eth", "usdt", InstrumentKind::Perpetual, Tikers),
+            (BinanceFuturesUsd::default(), "btc", "usdt", MarketDataInstrumentKind::Perpetual, Tikers),
+            (BinanceFuturesUsd::default(), "eth", "usdt", MarketDataInstrumentKind::Perpetual, Tikers),
         ])
         .init()
         .await
