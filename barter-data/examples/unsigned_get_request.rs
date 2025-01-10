@@ -1,4 +1,3 @@
-use barter_instrument::asset::symbol::Symbol;
 use barter_integration::{
     error::SocketError,
     protocol::http::{
