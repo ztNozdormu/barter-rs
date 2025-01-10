@@ -90,7 +90,7 @@ pub enum SubKind {
     OrderBooksL3,
     Liquidations,
     Candles,
-    Tikers
+    Tikers,
 }
 
 impl<Exchange, S, Kind> From<(Exchange, S, S, MarketDataInstrumentKind, Kind)>

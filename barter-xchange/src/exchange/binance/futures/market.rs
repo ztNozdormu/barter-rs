@@ -20,7 +20,7 @@
 - [ ] `Taker Buy/Sell Volume (MARKET_DATA)`
 */
 
-use crate::exchange::errors::{ErrorKind, Result};
+use crate::exchange::errors::{ErrorKind, ExecutionError, Result};
 use barter_integration::{metric, protocol::http::rest::client::RestClient};
 use std::collections::BTreeMap;
 
@@ -46,7 +46,7 @@ pub struct FuturesMarket {
 impl FuturesMarket {
     // Returns up to 'limit' klines for given symbol and interval ("1m", "5m", ...)
     // https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#klinecandlestick-data
-    pub async fn get_klines<S1, S2, S3, S4, S5>(
+    pub async fn klines<S1, S2, S3, S4, S5>(
         &self,
         symbol: S1,
         interval: S2,
@@ -112,23 +112,28 @@ impl FuturesMarket {
         &self,
         symbol: S1,
         interval: S2,
-    ) -> Result<KlineSummary> 
+    ) -> Result<KlineSummary>
     where
         S1: Into<String>,
         S2: Into<String>,
-        {
-
+    {
         // 调用 `get_klines` 获取结果
-        if let Ok(KlineSummaries::AllKlineSummaries(res)) = self.get_klines(symbol, interval, 1, None, None).await {
+        if let Ok(KlineSummaries::AllKlineSummaries(res)) =
+            self.klines(symbol, interval, 1, None, None).await
+        {
             if res.len() == 1 {
                 Ok(res.into_iter().next().unwrap()) // 返回唯一元素
             } else {
-                Err(ErrorKind::MarketError(e).into())
-                // Err(anyhow!("Expected exactly one element, found {}", res.len()))
+                Err(ErrorKind::MarketError(ExecutionError::GetKlineError(
+                    "Expected exactly one element, no found".to_string(),
+                ))
+                .into())
             }
         } else {
-            Err(ErrorKind::MarketError(e).into())
-            // Err(anyhow!("Error fetching klines"))
-        }
+            Err(ErrorKind::MarketError(ExecutionError::GetKlineError(
+                "fetching last kline data error".to_string(),
+            ))
+            .into())
+       }
     }
 }

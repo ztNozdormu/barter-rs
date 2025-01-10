@@ -2,7 +2,8 @@ use barter_instrument::asset::name::AssetNameInternal;
 use barter_integration::{
     error::SocketError,
     protocol::http::{
-        rest::{client::RestClient, RestRequest}, BuildStrategy, HttpParser
+        rest::{client::RestClient, RestRequest},
+        BuildStrategy, HttpParser,
     },
 };
 use hmac::{Hmac, Mac};
@@ -79,7 +80,8 @@ impl BuildStrategy for RequestUnsinger {
         builder: reqwest::RequestBuilder,
     ) -> Result<reqwest::Request, SocketError>
     where
-        Request: RestRequest {
+        Request: RestRequest,
+    {
         todo!()
     }
 }

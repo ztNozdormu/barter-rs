@@ -6,7 +6,12 @@ use crate::{
     exchange::{Connector, ExchangeServer, ExchangeSub, StreamSelector},
     instrument::InstrumentData,
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
-    subscription::{book::OrderBooksL1, tiker::{Tiker, Tikers}, trade::PublicTrades, Map},
+    subscription::{
+        book::OrderBooksL1,
+        tiker::{Tiker, Tikers},
+        trade::PublicTrades,
+        Map,
+    },
     transformer::stateless::StatelessTransformer,
     ExchangeWsStream, NoInitialSnapshots,
 };
@@ -127,9 +132,8 @@ where
     Server: ExchangeServer + Debug + Send + Sync,
 {
     type SnapFetcher = NoInitialSnapshots;
-    type Stream = ExchangeWsStream<
-        StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTiker>,
-    >;
+    type Stream =
+        ExchangeWsStream<StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTiker>>;
 }
 
 impl<'de, Server> serde::Deserialize<'de> for Binance<Server>
