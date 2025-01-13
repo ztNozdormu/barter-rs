@@ -22,6 +22,7 @@
 
 use crate::exchange::errors::{ErrorKind, ExecutionError, Result};
 use barter_integration::{metric, protocol::http::rest::client::RestClient};
+use itertools::Itertools;
 use std::{cmp::Reverse, collections::BTreeMap};
 
 use crate::{
@@ -93,16 +94,15 @@ impl FuturesMarket {
             Ok((data, metric)) => {
                 // println!("Success: {:?}", data.0);
                 // println!("Metric: {:?}", metric);
-                let mut klines = data
-                    .0
-                    .iter()
-                    .map(|row| row.try_into())
-                    .collect::<Result<Vec<KlineSummary>>>()?;
-
-                klines.sort_by_key(|kline| Reverse(kline.close_time));
-
-                let klines: KlineSummaries = KlineSummaries::AllKlineSummaries(klines);
-
+                let klines = KlineSummaries::AllKlineSummaries(
+                    data.0
+                        .iter()
+                        .map(|row| row.try_into())
+                        .collect::<Result<Vec<KlineSummary>>>()?
+                        .into_iter()
+                        .sorted_by_key(|kline| Reverse(kline.close_time))
+                        .collect(),
+                );
                 Ok(klines)
             }
             Err(e) => {
