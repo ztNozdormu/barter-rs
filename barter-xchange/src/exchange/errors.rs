@@ -43,7 +43,7 @@ error_chain! {
             description("invalid Vec for Kline"),
             display("{} at {} is missing", name, index),
         }
-        
+
         KlineValueParseError(parse_error: KVParseError)
 
         MarketError(response: ExecutionError)

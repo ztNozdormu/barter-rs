@@ -1091,17 +1091,31 @@ fn get_value(row: &[Value], index: usize, name: &'static str) -> Result<Value> {
         .clone())
 }
 
-fn from_value(value: &Value) -> Result<f64> {//where T: DeserializeOwned,
+fn from_value(value: &Value) -> Result<f64> {
+    //where T: DeserializeOwned,
     match value {
         Value::String(s) => {
             // 尝试将字符串解析为 f64
-            Ok(s.trim().parse::<f64>().map_err(|err| ErrorKind::KlineValueParseError(KVParseError::ParseError(err)))?)
+            Ok(s.trim()
+                .parse::<f64>()
+                .map_err(|err| ErrorKind::KlineValueParseError(KVParseError::ParseError(err)))?)
         }
         Value::Number(n) => {
             // 尝试直接转换数字
-            Ok(n.as_f64().ok_or_else(|| ErrorKind::KlineValueParseError(KVParseError::InvalidType(format!("Number: {:?}", n))))?)
+            Ok(n.as_f64().ok_or_else(|| {
+                ErrorKind::KlineValueParseError(KVParseError::InvalidType(format!(
+                    "Number: {:?}",
+                    n
+                )))
+            })?)
         }
-        _ => Err(ErrorKind::KlineValueParseError(KVParseError::InvalidType(format!("Unsupported Value type: {:?}", value))).into()),
+        _ => Err(
+            ErrorKind::KlineValueParseError(KVParseError::InvalidType(format!(
+                "Unsupported Value type: {:?}",
+                value
+            )))
+            .into(),
+        ),
     }
 }
 
