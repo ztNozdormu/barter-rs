@@ -5,18 +5,28 @@ use barter_xchange::exchange::binance::{
 #[rustfmt::skip]
 #[tokio::main]
 async fn main() {
-    market_data().await;
+    klines().await;
+    last_kline().await;
 }
 
-async fn market_data() {
+async fn klines() {
     let market: FuturesMarket = Binance::new(None, None);
 
-    match market.get_klines("btcusdt", "5m", None, None, None).await {
+    match market.klines("btcusdt", "5m", None, None, None).await {
         Ok(KlineSummaries::AllKlineSummaries(answer)) => println!(
             "First kline: {:?} kline count : {}",
             answer[0],
             answer.len()
         ),
+        Err(e) => println!("Error: {}", e),
+    }
+}
+
+async fn last_kline() {
+    let market: FuturesMarket = Binance::new(None, None);
+
+    match market.last_kline("btcusdt", "5m").await {
+        Ok(last_kline) => println!("last kline: {:?}", last_kline),
         Err(e) => println!("Error: {}", e),
     }
 }
