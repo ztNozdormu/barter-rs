@@ -8,7 +8,7 @@ use crate::{
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
     subscription::{
         book::OrderBooksL1,
-        tiker::{Tiker, Tikers},
+        tiker::Tikers,
         trade::PublicTrades,
         Map,
     },
