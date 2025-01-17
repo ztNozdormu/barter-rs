@@ -1,21 +1,21 @@
-use barter::{
-    data::historical,
-    engine::{trader::Trader, Engine},
-    event::{Event, EventTx},
-    execution::{
-        simulated::{Config as ExecutionConfig, SimulatedExecution},
-        Fees,
-    },
-    portfolio::{
-        allocator::DefaultAllocator, portfolio::MetaPortfolio,
-        repository::in_memory::InMemoryRepository, risk::DefaultRisk,
-    },
-    statistic::summary::{
-        trading::{Config as StatisticConfig, TradingSummary},
-        Initialiser,
-    },
-    strategy::example::{Config as StrategyConfig, RSIStrategy},
-};
+// use barter::{
+//     data::historical,
+//     engine::{trader::Trader, Engine},
+//     event::{Event, EventTx},
+//     execution::{
+//         simulated::{Config as ExecutionConfig, SimulatedExecution},
+//         Fees,
+//     },
+//     portfolio::{
+//         allocator::DefaultAllocator, portfolio::MetaPortfolio,
+//         repository::in_memory::InMemoryRepository, risk::DefaultRisk,
+//     },
+//     statistic::summary::{
+//         trading::{Config as StatisticConfig, TradingSummary},
+//         Initialiser,
+//     },
+//     strategy::example::{Config as StrategyConfig, RSIStrategy},
+// };
 use barter_data::{
     event::{DataKind, MarketEvent},
     subscription::candle::Candle,
@@ -23,13 +23,12 @@ use barter_data::{
 use barter_instrument::{
     exchange::ExchangeId,
     instrument::market_data::{kind::MarketDataInstrumentKind, MarketDataInstrument},
-    market::Market,
 };
 use chrono::Utc;
-use parking_lot::Mutex;
+// use parking_lot::Mutex;
 use std::{collections::HashMap, fs, sync::Arc};
 use tokio::sync::mpsc;
-use uuid::Uuid;
+// use uuid::Uuid;
 
 const DATA_HISTORIC_CANDLES_1H: &str = "barter/examples/data/candles_1h.json";
 
