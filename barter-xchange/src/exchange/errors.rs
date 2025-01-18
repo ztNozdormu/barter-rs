@@ -18,6 +18,9 @@ pub enum ExecutionError {
 
     #[error("SocketError: {0}")]
     Socket(#[from] SocketError),
+
+    #[error("request kline error: {0}")]
+    GetKlineError(String),
 }
 
 // 定义自定义错误类型
@@ -43,7 +46,7 @@ error_chain! {
             description("invalid Vec for Kline"),
             display("{} at {} is missing", name, index),
         }
-        
+
         KlineValueParseError(parse_error: KVParseError)
 
         MarketError(response: ExecutionError)

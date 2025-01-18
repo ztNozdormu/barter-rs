@@ -2,7 +2,11 @@ use crate::{
     error::DataError,
     streams::consumer::MarketStreamResult,
     subscription::{
-        book::{OrderBookEvent, OrderBookL1}, candle::Candle, liquidation::Liquidation, tiker::Tiker, trade::PublicTrade
+        book::{OrderBookEvent, OrderBookL1},
+        candle::Candle,
+        liquidation::Liquidation,
+        tiker::Tiker,
+        trade::PublicTrade,
     },
 };
 use barter_instrument::{exchange::ExchangeId, instrument::market_data::MarketDataInstrument};

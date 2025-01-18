@@ -37,7 +37,10 @@ use barter_integration::{
     Validator,
 };
 use fnv::FnvHashMap;
-use futures::{stream::{select_all, SelectAll}, Stream};
+use futures::{
+    stream::{select_all, SelectAll},
+    Stream,
+};
 use futures_util::{future::try_join_all, StreamExt};
 use itertools::Itertools;
 use std::{

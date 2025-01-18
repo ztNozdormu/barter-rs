@@ -51,12 +51,12 @@ impl BinanceChannel {
 
     /// [`BinanceFuturesUsd`] tiker channel name.
     ///
-    /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
+    /// See docs: <https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/Individual-Symbol-Ticker-Streams>
     pub const TICKERS: Self = Self("@ticker");
 
-    /// [`BinanceFuturesUsd`] candle channel name.
+    /// [`BinanceFuturesUsd`] candle channel name. <symbol>@kline_<interval>
     ///
-    /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
+    /// See docs: <https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/Kline-Candlestick-Streams>
     pub const CANDLES: Self = Self("@kline");
 }
 

@@ -38,3 +38,5 @@ error-chain = { version = "0.12.4", default-features = false }
 
 # Misc
 chrono = { workspace = true, features = ["serde"]}
+# Iter tools
+itertools = { workspace = true }
