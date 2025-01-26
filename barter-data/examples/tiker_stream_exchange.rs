@@ -1,7 +1,7 @@
 use barter_data::{
     exchange::binance::futures::BinanceFuturesUsd,
     streams::{reconnect::stream::ReconnectingStream, Streams},
-    subscription::ticker::Tikers,
+    subscription::ticker::Tickers,
 };
 use barter_instrument::instrument::market_data::kind::MarketDataInstrumentKind;
 use futures::StreamExt;
@@ -21,10 +21,10 @@ async fn main() {
 
      // Initialise PublicTrades Streams for various exchanges
     // '--> each call to StreamBuilder::subscribe() creates a separate WebSocket connection
-    let streams = Streams::<Tikers>::builder()
+    let streams = Streams::<Tickers>::builder()
         .subscribe([
-            (BinanceFuturesUsd::default(), "btc", "usdt", MarketDataInstrumentKind::Perpetual, Tikers),
-            (BinanceFuturesUsd::default(), "eth", "usdt", MarketDataInstrumentKind::Perpetual, Tikers),
+            (BinanceFuturesUsd::default(), "btc", "usdt", MarketDataInstrumentKind::Perpetual, Tickers),
+            (BinanceFuturesUsd::default(), "eth", "usdt", MarketDataInstrumentKind::Perpetual, Tickers),
         ])
         .init()
         .await

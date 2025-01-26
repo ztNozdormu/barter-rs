@@ -1,26 +1,33 @@
 use super::SubscriptionKind;
 use barter_macro::{DeSubKind, SerSubKind};
 use chrono::{DateTime, Utc};
-use derive_more::{Constructor, Display};
+use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use crate::subscription::liquidation::Liquidation;
-use crate::subscription::ticker::Tikers;
 
 /// Barter [`Subscription`](super::Subscription) [`SubscriptionKind`] that yields [`Kline`]
 /// market events.
 #[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, DeSubKind, SerSubKind,
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize, Serialize,
 )]
-pub struct Klines;
+pub struct KLines {
+    pub iv: i32,
+}
 
-impl SubscriptionKind for Klines {
-    type Event = Kline;
+impl SubscriptionKind for KLines {
+    type Event = KLine;
     fn as_str(&self) -> &'static str {
-        "klines"
+        const STATIC_PREFIX: &str = "KLines"; // 定义一个静态常量
+        // 把数字转换为字符串并拼接
+        let combined = format!("{}{}", STATIC_PREFIX, self.iv);
+
+        // 这会引发问题，因为 combined 是一个临时的 String
+        // 不能直接返回 &'static str
+        Box::leak(combined.into_boxed_str())
+        // format!("KLines{}",self.iv).as_str()
     }
 }
 
-impl Display for Kline {
+impl Display for KLines {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
     }
@@ -28,7 +35,7 @@ impl Display for Kline {
 
 /// Normalised Barter [`Kline`] model.
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
-pub struct Kline {
+pub struct KLine {
     pub close_time: DateTime<Utc>,
     pub open: f64,
     pub high: f64,

@@ -8,13 +8,13 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, DeSubKind, SerSubKind,
 )]
-pub struct Tikers;
+pub struct Tickers;
 
-impl SubscriptionKind for Tikers {
+impl SubscriptionKind for Tickers {
     type Event = Ticker;
 
     fn as_str(&self) -> &'static str {
-        "tikers"
+        "tickers"
     }
 }
 /// {
@@ -111,7 +111,7 @@ pub struct Ticker {
     pub count: u64,
 }
 
-impl std::fmt::Display for Tikers {
+impl std::fmt::Display for Tickers {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
     }
