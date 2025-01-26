@@ -229,7 +229,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
                                             ))
                                         })
                                     }
-                                    (ExchangeId::BinanceFuturesUsd, SubKind::Tikers) => {
+                                    (ExchangeId::BinanceFuturesUsd, SubKind::Tickers) => {
                                         init_market_stream(
                                             STREAM_RECONNECTION_POLICY,
                                             subs.into_iter()
@@ -808,7 +808,7 @@ where
                         rxs.liquidations.insert(sub.exchange, rx);
                     }
                 }
-                SubKind::Tikers => {
+                SubKind::Tickers => {
                     if let (None, None) =
                         (txs.tikers.get(&sub.exchange), rxs.tikers.get(&sub.exchange))
                     {
