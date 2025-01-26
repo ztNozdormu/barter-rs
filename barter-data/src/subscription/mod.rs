@@ -29,6 +29,9 @@ pub mod trade;
 /// Ticker [`SubscriptionKind`] and the associated Barter output data model.
 pub mod ticker;
 
+/// Kline [`SubscriptionKind`] and the associated Barter output data model.
+pub mod kline;
+
 /// Defines kind of a [`Subscription`], and the output [`Self::Event`] that it yields.
 pub trait SubscriptionKind
 where
