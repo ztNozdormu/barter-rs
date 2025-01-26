@@ -57,7 +57,11 @@ impl BinanceChannel {
     /// [`BinanceFuturesUsd`] candle channel name. <symbol>@kline_<interval>
     ///
     /// See docs: <https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/Kline-Candlestick-Streams>
+    /// [`BinanceFuturesUsd`] candle channel name. <symbol>@kline_<interval>@+08:00
+    //
+    //  See docs: https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams#klinecandlestick-streams-with-timezone-offset>
     pub const CANDLES: Self = Self("@kline");
+
 }
 
 impl<Server, Instrument> Identifier<BinanceChannel>
