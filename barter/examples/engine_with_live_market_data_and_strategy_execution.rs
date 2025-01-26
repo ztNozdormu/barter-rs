@@ -15,7 +15,6 @@ use barter::{
     logging::init_logging,
     risk::{DefaultRiskManager, DefaultRiskManagerState},
     statistic::time::Daily,
-    strategy::{DefaultStrategy, DefaultStrategyState},
     EngineEvent,
 };
 use barter_data::{
@@ -45,6 +44,7 @@ use futures::StreamExt;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use tracing::debug;
+use barter::strategy::TrendStrategy::{TrendStrategy, TrendStrategyState};
 
 const EXCHANGE: ExchangeId = ExchangeId::BinanceSpot;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
@@ -92,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Construct EngineState from IndexedInstruments and hard-coded exchange asset Balances
     let state =
-        EngineState::<DefaultMarketData, DefaultStrategyState, DefaultRiskManagerState>::builder(
+        EngineState::<DefaultMarketData, TrendStrategyState, DefaultRiskManagerState>::builder(
             &instruments,
         )
         .time_engine_start(clock.time())
@@ -128,7 +128,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         clock,
         state,
         execution_txs,
-        DefaultStrategy::default(),
+        TrendStrategy::default(),
         DefaultRiskManager::default(),
     );
 
