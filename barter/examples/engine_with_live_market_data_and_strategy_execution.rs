@@ -44,7 +44,7 @@ use futures::StreamExt;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use tracing::debug;
-use barter::strategy::TrendStrategy::{TrendStrategy, TrendStrategyState};
+use barter::strategy::trend_strategy::{TrendStrategy, TrendStrategyState};
 
 const EXCHANGE: ExchangeId = ExchangeId::BinanceSpot;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);

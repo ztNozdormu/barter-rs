@@ -1,20 +1,26 @@
-use std::marker::PhantomData;
-use serde::{Deserialize, Serialize};
-use barter_data::event::MarketEvent;
-use barter_execution::AccountEvent;
-use barter_execution::order::id::StrategyId;
-use barter_execution::order::{Order, RequestCancel, RequestOpen};
-use barter_instrument::asset::AssetIndex;
-use barter_instrument::exchange::{ExchangeId, ExchangeIndex};
-use barter_instrument::instrument::InstrumentIndex;
-use crate::engine::{Engine, Processor};
-use crate::engine::state::EngineState;
 use crate::engine::state::instrument::filter::InstrumentFilter;
-use crate::engine::state::instrument::market_data::MarketDataState;
+use crate::engine::state::instrument::market_data::{DefaultMarketData, MarketDataState};
+use crate::engine::state::EngineState;
+use crate::engine::{Engine, Processor};
+use crate::risk::DefaultRiskManagerState;
 use crate::strategy::algo::AlgoStrategy;
 use crate::strategy::close_positions::{close_open_positions_with_market_orders, ClosePositionsStrategy};
 use crate::strategy::on_disconnect::OnDisconnectStrategy;
 use crate::strategy::on_trading_disabled::OnTradingDisabled;
+use crate::strategy::DefaultStrategyState;
+use barter_data::event::MarketEvent;
+use barter_execution::order::id::{ClientOrderId, StrategyId};
+use barter_execution::order::{Order, OrderKind, RequestCancel, RequestOpen, TimeInForce};
+use barter_execution::AccountEvent;
+use barter_instrument::{
+    asset::AssetIndex,
+    exchange::{ExchangeId, ExchangeIndex},
+    instrument::InstrumentIndex,
+    Side,
+};
+use rust_decimal_macros::dec;
+use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 
 /// Naive implementation of all strategy interfaces.
 ///
@@ -39,20 +45,50 @@ impl<State> Default for TrendStrategy<State> {
         }
     }
 }
-
-impl<State, ExchangeKey, InstrumentKey> AlgoStrategy<ExchangeKey, InstrumentKey>
-for TrendStrategy<State>
-{
-    type State = State;
+// impl<State, ExchangeKey, InstrumentKey> AlgoStrategy<ExchangeKey, InstrumentKey>
+// for TrendStrategy<State>
+// {}
+impl<State> AlgoStrategy for TrendStrategy<State> {
+    type State = EngineState<DefaultMarketData, DefaultStrategyState, DefaultRiskManagerState>;
 
     fn generate_algo_orders(
         &self,
-        _: &Self::State,
+        state: &Self::State,
     ) -> (
-        impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestCancel>>,
-        impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestOpen>>,
+        impl IntoIterator<Item = Order<ExchangeIndex, InstrumentIndex, RequestCancel>>,
+        impl IntoIterator<Item = Order<ExchangeIndex, InstrumentIndex, RequestOpen>>,
     ) {
-        (std::iter::empty(), std::iter::empty())
+
+        let opens = state.instruments.instruments().filter_map(|state| {
+            // Don't open more if we have a Position already
+            if state.position.is_some() {
+                return None;
+            }
+
+            // Don't open more orders if there are already some InFlight
+            if !state.orders.0.is_empty() {
+                return None;
+            }
+
+            // Don't open if there is no market data price available
+            let price = state.market.price()?;
+
+            // Generate Market order to buy the minimum allowed quantity
+            Some(Order {
+                exchange: state.instrument.exchange,
+                instrument: state.key,
+                strategy: self.id.clone(),
+                cid: gen_cid(state.key.index()),
+                side: Side::Buy,
+                state: RequestOpen {
+                    kind: OrderKind::Market,
+                    time_in_force: TimeInForce::ImmediateOrCancel,
+                    price,
+                    quantity: dec!(1),
+                },
+            })
+        });
+        (std::iter::empty(), opens)
     }
 }
 
@@ -119,4 +155,9 @@ Processor<&AccountEvent<ExchangeKey, AssetKey, InstrumentKey>> for TrendStrategy
 impl<InstrumentKey, Kind> Processor<&MarketEvent<InstrumentKey, Kind>> for TrendStrategyState {
     type Audit = ();
     fn process(&mut self, _: &MarketEvent<InstrumentKey, Kind>) -> Self::Audit {}
+}
+
+
+fn gen_cid(instrument: usize) -> ClientOrderId {
+    ClientOrderId::new(InstrumentIndex(instrument).to_string())
 }

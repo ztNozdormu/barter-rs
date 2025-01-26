@@ -42,7 +42,7 @@ pub mod on_disconnect;
 /// `TradingState` gets set to `TradingState::Disabled`.
 pub mod on_trading_disabled;
 
-pub mod TrendStrategy;
+pub mod trend_strategy;
 
 /// Naive implementation of all strategy interfaces.
 ///
