@@ -54,13 +54,13 @@ impl BinanceChannel {
     /// See docs: <https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/Individual-Symbol-Ticker-Streams>
     pub const TICKERS: Self = Self("@ticker");
 
-    /// [`BinanceFuturesUsd`] candle channel name. <symbol>@kline_<interval>
+    /// [`BinanceFuturesUsd`] kline channel name. <symbol>@kline_<interval>
     ///
     /// See docs: <https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/Kline-Candlestick-Streams>
-    /// [`BinanceFuturesUsd`] candle channel name. <symbol>@kline_<interval>@+08:00
+    /// [`BinanceFuturesUsd`] kline channel name. <symbol>@kline_<interval>@+08:00
     //
     //  See docs: https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams#klinecandlestick-streams-with-timezone-offset>
-    pub const CANDLES: Self = Self("@kline");
+    pub const KLINES: Self = Self("@kline");
 
 }
 
@@ -100,7 +100,7 @@ impl<Instrument> Identifier<BinanceChannel>
     for Subscription<BinanceFuturesUsd, Instrument, Candles>
 {
     fn id(&self) -> BinanceChannel {
-        BinanceChannel::CANDLES
+        BinanceChannel::KLINES
     }
 }
 

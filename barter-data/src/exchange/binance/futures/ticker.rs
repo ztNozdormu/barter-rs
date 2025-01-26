@@ -43,7 +43,7 @@ use crate::subscription::ticker::Ticker;
 /// ```
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct BinanceTicker {
-    #[serde(alias = "s", deserialize_with = "de_Ticker_subscription_id")]
+    #[serde(alias = "s", deserialize_with = "de_ticker_subscription_id")]
     pub subscription_id: SubscriptionId,
     #[serde(alias = "p", deserialize_with = "barter_integration::de::de_str")]
     pub price_change: f64,
@@ -136,7 +136,7 @@ impl<InstrumentKey> From<(ExchangeId, InstrumentKey, BinanceTicker)>
 
 /// Deserialize a [`BinanceTicker`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`]
 /// (eg/ "BTCUSDT@Ticker").
-pub fn de_Ticker_subscription_id<'de, D>(deserializer: D) -> Result<SubscriptionId, D::Error>
+pub fn de_ticker_subscription_id<'de, D>(deserializer: D) -> Result<SubscriptionId, D::Error>
 where
     D: serde::de::Deserializer<'de>,
 {

@@ -24,6 +24,9 @@ pub mod liquidation;
 /// Ticker types.
 pub mod ticker;
 
+/// Kline types.
+pub mod kline;
+
 /// [`BinanceFuturesUsd`] WebSocket server base url.
 ///
 /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#websocket-market-streams>

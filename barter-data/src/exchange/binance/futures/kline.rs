@@ -1,5 +1,6 @@
 use barter_integration::subscription::SubscriptionId;
 use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -7,6 +8,7 @@ use crate::{
     exchange::{binance::channel::BinanceChannel, ExchangeId, ExchangeSub},
     Identifier,
 };
+use crate::exchange::binance::book::l1::BinanceOrderBookL1;
 use crate::subscription::ticker::Ticker;
 
 /// Binance real-time candle message.
@@ -46,106 +48,85 @@ use crate::subscription::ticker::Ticker;
 /// }
 /// ```
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
-pub struct BinanceCandle {
-    #[serde(alias = "s", deserialize_with = "de_Ticker_subscription_id")]
+pub struct BinanceKline {
+    #[serde(alias = "k")]
+    pub kline: BinanceKlineData,
+}
+/// [`BinanceFuturesUsd`](super::BinanceFuturesUsd) Liquidation order.
+///
+/// ### Raw Payload Examples
+/// ```json
+/// {
+///     "t": 1672515780000, // Kline start time
+///     "T": 1672515839999, // Kline close time
+///     "s": "BNBBTC",      // Symbol
+///     "i": "1m",          // Interval
+///     "f": 100,           // First trade ID
+///     "L": 200,           // Last trade ID
+///     "o": "0.0010",      // Open price
+///     "c": "0.0020",      // Close price
+///     "h": "0.0025",      // High price
+///     "l": "0.0015",      // Low price
+///     "v": "1000",        // Base asset volume
+///     "n": 100,           // Number of trades
+///     "x": false,         // Is this kline closed?
+///     "q": "1.0000",      // Quote asset volume
+///     "V": "500",         // Taker buy base asset volume
+///     "Q": "0.500",       // Taker buy quote asset volume
+///     "B": "123456"       // Ignore
+///   }
+/// ```
+///
+/// See docs: <https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams#klinecandlestick-streams-for-utc>
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+pub struct BinanceKlineData {
+    #[serde(alias = "s", deserialize_with = "de_kline_subscription_id")]
     pub subscription_id: SubscriptionId,
-    #[serde(alias = "p", deserialize_with = "barter_integration::de::de_str")]
-    pub price_change: f64,
-    #[serde(alias = "P", deserialize_with = "barter_integration::de::de_str")]
-    pub price_change_percent: f64,
-    #[serde(alias = "w", deserialize_with = "barter_integration::de::de_str")]
-    pub weighted_avg_price: f64,
-    // #[serde(alias = "x", deserialize_with = "barter_integration::de::de_str")]
-    // pub prev_close_price: f64,
-    #[serde(alias = "c", deserialize_with = "barter_integration::de::de_str")]
-    pub last_price: f64,
-    #[serde(alias = "Q", deserialize_with = "barter_integration::de::de_str")]
-    pub last_qty: f64,
-    // #[serde(alias = "b", deserialize_with = "barter_integration::de::de_str")]
-    // pub bid_price: f64,
-    // #[serde(alias = "B", deserialize_with = "barter_integration::de::de_str")]
-    // pub bid_qty: f64,
-    // #[serde(alias = "a", deserialize_with = "barter_integration::de::de_str")]
-    // pub ask_price: f64,
-    // #[serde(alias = "A", deserialize_with = "barter_integration::de::de_str")]
-    // pub ask_qty: f64,
-    #[serde(alias = "o", deserialize_with = "barter_integration::de::de_str")]
-    pub open_price: f64,
-    #[serde(alias = "h", deserialize_with = "barter_integration::de::de_str")]
-    pub high_price: f64,
-    #[serde(alias = "l", deserialize_with = "barter_integration::de::de_str")]
-    pub low_price: f64,
-    #[serde(alias = "v", deserialize_with = "barter_integration::de::de_str")]
-    pub volume: f64,
-    #[serde(alias = "q", deserialize_with = "barter_integration::de::de_str")]
-    pub quote_volume: f64,
+
+    #[serde(alias = "o", with = "rust_decimal::serde::str")]
+    pub open: Decimal,
+    #[serde(alias = "c", with = "rust_decimal::serde::str")]
+    pub close: Decimal,
+    #[serde(alias = "h", with = "rust_decimal::serde::str")]
+    pub high: Decimal,
+    #[serde(alias = "l", with = "rust_decimal::serde::str")]
+    pub low: Decimal,
+
+    #[serde(alias = "v", with = "rust_decimal::serde::str")]
+    pub base_asset_volume: Decimal,
+    #[serde(alias = "n", with = "rust_decimal::serde::str")]
+    pub trade_nums: Decimal,
+    #[serde(alias = "x")]
+    pub is_kline_closed: bool,
+    #[serde(alias = "q", with = "rust_decimal::serde::str")]
+    pub quote_asset_volume: Decimal,
+    #[serde(alias = "V", with = "rust_decimal::serde::str")]
+    pub buy_base_asset_volume: Decimal,
+    #[serde(alias = "Q", with = "rust_decimal::serde::str")]
+    pub buy_quote_asset_volume: Decimal,
+
     #[serde(
-        alias = "O",
+        alias = "t",
         deserialize_with = "barter_integration::de::de_u64_epoch_ms_as_datetime_utc"
     )]
-    pub open_time: DateTime<Utc>,
+    pub start_time: DateTime<Utc>,
+
     #[serde(
-        alias = "C",
+        alias = "T",
         deserialize_with = "barter_integration::de::de_u64_epoch_ms_as_datetime_utc"
     )]
     pub close_time: DateTime<Utc>,
-    #[serde(alias = "F")]
-    pub first_id: u64,
-    #[serde(alias = "L")]
-    pub last_id: u64,
-    #[serde(alias = "n")]
-    pub count: u64,
 }
 
-impl Identifier<Option<SubscriptionId>> for BinanceTicker {
-    fn id(&self) -> Option<SubscriptionId> {
-        Some(self.subscription_id.clone())
-    }
-}
-
-impl<InstrumentKey> From<(ExchangeId, InstrumentKey, BinanceTicker)>
-    for MarketIter<InstrumentKey, Ticker>
-{
-    fn from((exchange_id, instrument, Ticker): (ExchangeId, InstrumentKey, BinanceTicker)) -> Self {
-        Self(vec![Ok(MarketEvent {
-            time_exchange: Ticker.close_time,
-            time_received: Utc::now(),
-            exchange: exchange_id,
-            instrument,
-            kind: Ticker {
-                price_change: Ticker.price_change,
-                price_change_percent: Ticker.price_change_percent,
-                weighted_avg_price: Ticker.weighted_avg_price,
-                // prev_close_price: Ticker.prev_close_price,
-                last_qty: Ticker.last_qty,
-                // bid_price: Ticker.bid_price,
-                // bid_qty: Ticker.bid_qty,
-                // ask_price: Ticker.ask_price,
-                // ask_qty: Ticker.ask_qty,
-                open: Ticker.open_price,
-                high: Ticker.high_price,
-                low: Ticker.low_price,
-                last_price: Ticker.last_price,
-                volume: Ticker.volume,
-                quote_volume: Ticker.quote_volume,
-                open_time: Ticker.open_time,
-                close_time: Ticker.close_time,
-                first_id: Ticker.first_id,
-                last_id: Ticker.last_id,
-                count: Ticker.count,
-            },
-        })])
-    }
-}
-
-/// Deserialize a [`BinanceTicker`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`]
-/// (eg/ "BTCUSDT@Ticker").
-pub fn de_Ticker_subscription_id<'de, D>(deserializer: D) -> Result<SubscriptionId, D::Error>
+/// Deserialize a [`BinanceKliner`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`].
+///
+/// eg/ "@kline|BTCUSDT"
+pub fn de_kline_subscription_id<'de, D>(deserializer: D) -> Result<SubscriptionId, D::Error>
 where
     D: serde::de::Deserializer<'de>,
 {
     <&str as Deserialize>::deserialize(deserializer)
-        .map(|market| ExchangeSub::from((BinanceChannel::TICKERS, market)).id())
+        .map(|market| ExchangeSub::from((BinanceChannel::KLINES, market)).id())
 }
 
 // #[cfg(test)]
