@@ -24,7 +24,7 @@ use crate::{
     subscription::{
         book::{OrderBookEvent, OrderBookL1, OrderBooksL1},
         liquidation::{Liquidation, Liquidations},
-        tiker::{Tiker, Tikers},
+        ticker::{Ticker, Tikers},
         trade::{PublicTrade, PublicTrades},
         SubKind, Subscription,
     },
@@ -65,7 +65,7 @@ pub struct DynamicStreams<InstrumentKey> {
     pub liquidations:
         VecMap<ExchangeId, UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Liquidation>>>,
     pub tikers:
-        VecMap<ExchangeId, UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Tiker>>>,
+        VecMap<ExchangeId, UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Ticker>>>,
 }
 
 impl<InstrumentKey> DynamicStreams<InstrumentKey> {
@@ -651,7 +651,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
     pub fn select_tickers(
         &mut self,
         exchange: ExchangeId,
-    ) -> Option<UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Tiker>>> {
+    ) -> Option<UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Ticker>>> {
         self.tikers.remove(&exchange)
     }
 
@@ -659,7 +659,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
     /// [`SelectAll`](futures_util::stream::select_all).
     pub fn select_all_tickers(
         &mut self,
-    ) -> SelectAll<UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Tiker>>> {
+    ) -> SelectAll<UnboundedReceiverStream<MarketStreamResult<InstrumentKey, Ticker>>> {
         select_all(std::mem::take(&mut self.tikers).into_values())
     }
 
@@ -676,7 +676,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
         MarketStreamResult<InstrumentKey, OrderBookL1>: Into<Output>,
         MarketStreamResult<InstrumentKey, OrderBookEvent>: Into<Output>,
         MarketStreamResult<InstrumentKey, Liquidation>: Into<Output>,
-        MarketStreamResult<InstrumentKey, Tiker>: Into<Output>,
+        MarketStreamResult<InstrumentKey, Ticker>: Into<Output>,
     {
         let Self {
             trades,
@@ -834,7 +834,7 @@ struct Txs<InstrumentKey> {
     l2s: FnvHashMap<ExchangeId, UnboundedTx<MarketStreamResult<InstrumentKey, OrderBookEvent>>>,
     liquidations:
         FnvHashMap<ExchangeId, UnboundedTx<MarketStreamResult<InstrumentKey, Liquidation>>>,
-    tikers: FnvHashMap<ExchangeId, UnboundedTx<MarketStreamResult<InstrumentKey, Tiker>>>,
+    tikers: FnvHashMap<ExchangeId, UnboundedTx<MarketStreamResult<InstrumentKey, Ticker>>>,
 }
 
 impl<InstrumentKey> Default for Txs<InstrumentKey> {
@@ -855,7 +855,7 @@ struct Rxs<InstrumentKey> {
     l2s: FnvHashMap<ExchangeId, UnboundedRx<MarketStreamResult<InstrumentKey, OrderBookEvent>>>,
     liquidations:
         FnvHashMap<ExchangeId, UnboundedRx<MarketStreamResult<InstrumentKey, Liquidation>>>,
-    tikers: FnvHashMap<ExchangeId, UnboundedRx<MarketStreamResult<InstrumentKey, Tiker>>>,
+    tikers: FnvHashMap<ExchangeId, UnboundedRx<MarketStreamResult<InstrumentKey, Ticker>>>,
 }
 
 impl<InstrumentKey> Default for Rxs<InstrumentKey> {

@@ -8,7 +8,7 @@ use crate::{
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
     subscription::{
         book::OrderBooksL1,
-        tiker::Tikers,
+        ticker::Tikers,
         trade::PublicTrades,
         Map,
     },
@@ -17,9 +17,9 @@ use crate::{
 };
 use barter_instrument::exchange::ExchangeId;
 use barter_integration::{error::SocketError, protocol::websocket::WsMessage};
-use futures::tiker::BinanceTiker;
 use std::{fmt::Debug, marker::PhantomData};
 use url::Url;
+use crate::exchange::binance::futures::ticker::BinanceTicker;
 
 /// OrderBook types common to both [`BinanceSpot`](spot::BinanceSpot) and
 /// [`BinanceFuturesUsd`](futures::BinanceFuturesUsd).
@@ -133,7 +133,7 @@ where
 {
     type SnapFetcher = NoInitialSnapshots;
     type Stream =
-        ExchangeWsStream<StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTiker>>;
+        ExchangeWsStream<StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTicker>>;
 }
 
 impl<'de, Server> serde::Deserialize<'de> for Binance<Server>

@@ -1,7 +1,7 @@
 // /*
 // 策略市场数据业务 TODO
 // */
-// use barter_data::{exchange::binance::{api::Binance, futures::market::FuturesMarket, model::{KlineSummaries, KlineSummary}}, subscription::tiker::Tiker};
+// use barter_data::{exchange::binance::{api::Binance, futures::market::FuturesMarket, model::{KlineSummaries, KlineSummary}}, subscription::Ticker::Ticker};
 // use chrono::{DateTime, NaiveDateTime, Utc};
 // use rand::Rng;
 // use ta::Volume;
@@ -46,12 +46,12 @@
 
 //     }
 
-//     async fn update_candle(&self, tiker: Tiker) {
+//     async fn update_candle(&self, Ticker: Ticker) {
 //         let mut current = self.current_candle.lock().unwrap();
 //         if let Some(KlineSummary) = current.as_mut() {
-//             KlineSummary.update(tiker);
+//             KlineSummary.update(Ticker);
 //         } else {
-//             *current = Some(KlineSummary::new(tiker));
+//             *current = Some(KlineSummary::new(Ticker));
 //         }
 //     }
 
@@ -89,8 +89,8 @@
 //         let low =  rng.gen_range(70000.0..81000.0);
 //         let close =  rng.gen_range(70000.0..81000.0);
 //         let volume = rng.gen_range(100.0..500.0);
-//         let tiker = Tiker{ price_change: 0f64, price_change_percent: 0f64, weighted_avg_price: 0f64, last_qty: 0f64, open: open, high: high, low: low, last_price: close, volume: volume, quote_volume: volume, open_time: Utc::now(), close_time: Utc::now(), first_id: 0u64, last_id: 0u64, count: 0u64};
-//         candle_manager.update_candle(tiker).await;
+//         let Ticker = Ticker{ price_change: 0f64, price_change_percent: 0f64, weighted_avg_price: 0f64, last_qty: 0f64, open: open, high: high, low: low, last_price: close, volume: volume, quote_volume: volume, open_time: Utc::now(), close_time: Utc::now(), first_id: 0u64, last_id: 0u64, count: 0u64};
+//         candle_manager.update_candle(Ticker).await;
 //         sleep(Duration::from_secs(interval)).await;
 //     }
 // }

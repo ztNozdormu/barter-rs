@@ -5,7 +5,7 @@ use crate::{
         book::{OrderBookEvent, OrderBookL1},
         candle::Candle,
         liquidation::Liquidation,
-        tiker::Tiker,
+        ticker::Ticker,
         trade::PublicTrade,
     },
 };
@@ -128,7 +128,7 @@ pub enum DataKind {
     OrderBook(OrderBookEvent),
     Candle(Candle),
     Liquidation(Liquidation),
-    Tiker(Tiker),
+    Ticker(Ticker),
 }
 
 impl DataKind {
@@ -139,7 +139,7 @@ impl DataKind {
             DataKind::OrderBook(_) => "l2",
             DataKind::Candle(_) => "candle",
             DataKind::Liquidation(_) => "liquidation",
-            DataKind::Tiker(_) => "ticker",
+            DataKind::Ticker(_) => "ticker",
         }
     }
 }
@@ -224,18 +224,18 @@ impl<InstrumentKey> From<MarketEvent<InstrumentKey, Liquidation>>
     }
 }
 
-impl<InstrumentKey> From<MarketStreamResult<InstrumentKey, Tiker>>
+impl<InstrumentKey> From<MarketStreamResult<InstrumentKey, Ticker>>
     for MarketStreamResult<InstrumentKey, DataKind>
 {
-    fn from(value: MarketStreamResult<InstrumentKey, Tiker>) -> Self {
+    fn from(value: MarketStreamResult<InstrumentKey, Ticker>) -> Self {
         value.map_ok(MarketEvent::from)
     }
 }
 
-impl<InstrumentKey> From<MarketEvent<InstrumentKey, Tiker>>
+impl<InstrumentKey> From<MarketEvent<InstrumentKey, Ticker>>
     for MarketEvent<InstrumentKey, DataKind>
 {
-    fn from(value: MarketEvent<InstrumentKey, Tiker>) -> Self {
-        value.map_kind(Tiker::into)
+    fn from(value: MarketEvent<InstrumentKey, Ticker>) -> Self {
+        value.map_kind(Ticker::into)
     }
 }

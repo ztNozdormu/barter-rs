@@ -21,6 +21,7 @@ use barter_instrument::{
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
+use tracing::info;
 
 /// Naive implementation of all strategy interfaces.
 ///
@@ -49,7 +50,7 @@ impl<State> Default for TrendStrategy<State> {
 // for TrendStrategy<State>
 // {}
 impl<State> AlgoStrategy for TrendStrategy<State> {
-    type State = EngineState<DefaultMarketData, DefaultStrategyState, DefaultRiskManagerState>;
+    type State = EngineState<DefaultMarketData, TrendStrategyState, DefaultRiskManagerState>;
 
     fn generate_algo_orders(
         &self,
@@ -72,7 +73,7 @@ impl<State> AlgoStrategy for TrendStrategy<State> {
 
             // Don't open if there is no market data price available
             let price = state.market.price()?;
-
+            info!("{price:?}");
             // Generate Market order to buy the minimum allowed quantity
             Some(Order {
                 exchange: state.instrument.exchange,

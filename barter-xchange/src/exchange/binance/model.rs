@@ -1,6 +1,6 @@
 use super::api::BinanceParser;
 use crate::exchange::errors::{Error, ErrorKind, ExecutionError, KVParseError, Result}; // ErrorKind::{KlineValueParseError,KlineValueMissingError}
-use barter_data::subscription::tiker::Tiker;
+use barter_data::subscription::ticker::Ticker;
 use barter_integration::{
     error::SocketError,
     protocol::http::{rest::RestRequest, HttpParser},
@@ -1148,14 +1148,14 @@ impl TryFrom<&Vec<Value>> for KlineSummary {
 }
 
 // impl KlineSummary {
-//     pub fn new(tiker: Tiker) -> Self {
+//     pub fn new(Ticker: Ticker) -> Self {
 //         Self {
-//             close_time: tiker.close_time.timestamp(),
-//             open: tiker.open.to_string(),
-//             high: tiker.high.to_string(),
-//             low: tiker.low.to_string(),
-//             close: tiker.last_price.to_string(),
-//             volume: tiker.volume.to_string(),
+//             close_time: Ticker.close_time.timestamp(),
+//             open: Ticker.open.to_string(),
+//             high: Ticker.high.to_string(),
+//             low: Ticker.low.to_string(),
+//             close: Ticker.last_price.to_string(),
+//             volume: Ticker.volume.to_string(),
 //             open_time: todo!(),
 //             quote_asset_volume: todo!(),
 //             number_of_trades: todo!(),
@@ -1163,25 +1163,25 @@ impl TryFrom<&Vec<Value>> for KlineSummary {
 //             taker_buy_quote_asset_volume: todo!(),
 //         }
 //     }
-//     pub fn update(&mut self, tiker: Tiker) {
-//         self.close_time = tiker.close_time.timestamp();
-//         self.open = tiker.open.to_string();
-//         self.high = tiker.high.to_string();
-//         self.low = tiker.low.to_string();
-//         self.close = tiker.last_price.to_string();
-//         self.volume = tiker.volume.to_string();
+//     pub fn update(&mut self, Ticker: Ticker) {
+//         self.close_time = Ticker.close_time.timestamp();
+//         self.open = Ticker.open.to_string();
+//         self.high = Ticker.high.to_string();
+//         self.low = Ticker.low.to_string();
+//         self.close = Ticker.last_price.to_string();
+//         self.volume = Ticker.volume.to_string();
 //     }
 // }
 
 impl KlineSummary {
-    pub fn new(tiker: Tiker) -> Self {
+    pub fn new(Ticker: Ticker) -> Self {
         Self {
-            close_time: tiker.close_time.timestamp(),
-            open: tiker.open,
-            high: tiker.high,
-            low: tiker.low,
-            close: tiker.last_price,
-            volume: tiker.volume,
+            close_time: Ticker.close_time.timestamp(),
+            open: Ticker.open,
+            high: Ticker.high,
+            low: Ticker.low,
+            close: Ticker.last_price,
+            volume: Ticker.volume,
             open_time: todo!(),
             quote_asset_volume: todo!(),
             number_of_trades: todo!(),
@@ -1189,13 +1189,13 @@ impl KlineSummary {
             taker_buy_quote_asset_volume: todo!(),
         }
     }
-    pub fn update(&mut self, tiker: Tiker) {
-        self.close_time = tiker.close_time.timestamp();
-        self.open = tiker.open;
-        self.high = tiker.high;
-        self.low = tiker.low;
-        self.close = tiker.last_price;
-        self.volume = tiker.volume;
+    pub fn update(&mut self, Ticker: Ticker) {
+        self.close_time = Ticker.close_time.timestamp();
+        self.open = Ticker.open;
+        self.high = Ticker.high;
+        self.low = Ticker.low;
+        self.close = Ticker.last_price;
+        self.volume = Ticker.volume;
     }
 }
 

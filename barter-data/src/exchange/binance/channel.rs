@@ -4,7 +4,7 @@ use crate::{
         book::{OrderBooksL1, OrderBooksL2},
         candle::Candles,
         liquidation::Liquidations,
-        tiker::Tikers,
+        ticker::Tikers,
         trade::PublicTrades,
         Subscription,
     },
@@ -49,7 +49,7 @@ impl BinanceChannel {
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
     pub const LIQUIDATIONS: Self = Self("@forceOrder");
 
-    /// [`BinanceFuturesUsd`] tiker channel name.
+    /// [`BinanceFuturesUsd`] Ticker channel name.
     ///
     /// See docs: <https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/Individual-Symbol-Ticker-Streams>
     pub const TICKERS: Self = Self("@ticker");

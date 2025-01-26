@@ -82,7 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialise MarketData Stream & forward to Engine feed
     let market_stream = init_indexed_multi_exchange_market_stream(
         &instruments,
-        &[SubKind::PublicTrades, SubKind::OrderBooksL1],
+        &[SubKind::Tikers],
     )
     .await?;
     tokio::spawn(market_stream.forward_to(feed_tx.clone()));

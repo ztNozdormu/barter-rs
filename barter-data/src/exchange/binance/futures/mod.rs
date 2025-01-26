@@ -8,7 +8,7 @@ use crate::{
         StreamSelector,
     },
     instrument::InstrumentData,
-    subscription::{book::OrderBooksL2, liquidation::Liquidations, tiker::Tikers},
+    subscription::{book::OrderBooksL2, liquidation::Liquidations, ticker::Tikers},
     transformer::stateless::StatelessTransformer,
     ExchangeWsStream, NoInitialSnapshots,
 };
@@ -21,8 +21,8 @@ pub mod l2;
 /// Liquidation types.
 pub mod liquidation;
 
-/// Tiker types.
-pub mod tiker;
+/// Ticker types.
+pub mod ticker;
 
 /// [`BinanceFuturesUsd`] WebSocket server base url.
 ///
