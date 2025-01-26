@@ -6,6 +6,7 @@ use barter_data::{
 use barter_instrument::instrument::market_data::kind::MarketDataInstrumentKind;
 use futures::StreamExt;
 use tracing::{info, warn};
+use barter_data::subscription::SubKind::Candles;
 
 #[rustfmt::skip]
 #[tokio::main]
@@ -23,6 +24,7 @@ async fn main() {
     let streams = Streams::<Tikers>::builder()
         .subscribe([
             (BinanceFuturesUsd::default(), "btc", "usdt", MarketDataInstrumentKind::Perpetual, Tikers),
+                  (BinanceFuturesUsd::default(), "btc", "usdt", MarketDataInstrumentKind::Perpetual, C),
             (BinanceFuturesUsd::default(), "eth", "usdt", MarketDataInstrumentKind::Perpetual, Tikers),
         ])
         .init()

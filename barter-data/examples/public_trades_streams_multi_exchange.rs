@@ -67,6 +67,7 @@ async fn main() {
         ])
 
         .subscribe([
+
             (BybitSpot::default(), "btc", "usdt", MarketDataInstrumentKind::Spot, PublicTrades),
             (BybitSpot::default(), "eth", "usdt", MarketDataInstrumentKind::Spot, PublicTrades),
         ])
