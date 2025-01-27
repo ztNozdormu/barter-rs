@@ -53,6 +53,7 @@ use crate::exchange::subscription::ExchangeSub;
 /// ```
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct BinanceKline {
+
     #[serde(alias = "k")]
     pub kline: BinanceKlineData,
 }
@@ -99,7 +100,7 @@ pub struct BinanceKlineData {
     #[serde(alias = "v", deserialize_with = "barter_integration::de::de_str")]
     pub base_asset_volume: f64,
 
-    #[serde(alias = "n", deserialize_with = "barter_integration::de::de_str")]
+    #[serde(alias = "n")]
     pub trade_nums: u64,
     #[serde(alias = "x")]
     pub is_kline_closed: bool,
@@ -179,31 +180,30 @@ mod tests {
         fn test_binance_kline() {
             let input = r#"
             {
-              "e": "kline",         // Event type
-              "E": 1672515782136,   // Event time
-              "s": "BNBBTC",        // Symbol
+              "e": "kline",
+              "E": 1672515782136,
+              "s": "BNBBTC",
               "k": {
-                "t": 1672515780000, // Kline start time
-                "T": 1672515839999, // Kline close time
-                "s": "BNBBTC",      // Symbol
-                "i": "1m",          // Interval
-                "f": 100,           // First trade ID
-                "L": 200,           // Last trade ID
-                "o": "0.0010",      // Open price
-                "c": "0.0020",      // Close price
-                "h": "0.0025",      // High price
-                "l": "0.0015",      // Low price
-                "v": "1000",        // Base asset volume
-                "n": 100,           // Number of trades
-                "x": false,         // Is this kline closed?
-                "q": "1.0000",      // Quote asset volume
-                "V": "500",         // Taker buy base asset volume
-                "Q": "0.500",       // Taker buy quote asset volume
-                "B": "123456"       // Ignore
+                "t": 1672515780000,
+                "T": 1672515839999,
+                "s": "BNBBTC",
+                "i": "1m",
+                "f": 100,
+                "L": 200,
+                "o": "0.0010",
+                "c": "0.0020",
+                "h": "0.0025",
+                "l": "0.0015",
+                "v": "1000",
+                "n": 100,
+                "x": false,
+                "q": "1.0000",
+                "V": "500",
+                "Q": "0.500",
+                "B": "123456"
               }
             }
             "#;
-
             assert_eq!(
                 serde_json::from_str::<BinanceKline>(input).unwrap(),
                 BinanceKline {
@@ -220,9 +220,9 @@ mod tests {
                         buy_base_asset_volume: 500f64,
                         buy_quote_asset_volume: 0.500,
                         start_time: datetime_utc_from_epoch_duration(Duration::from_millis(
-                            1665523974217)),
+                            1672515780000)),
                         close_time: datetime_utc_from_epoch_duration(Duration::from_millis(
-                            1665523974217)),
+                            1672515839999)),
                     },
                 }
             );
