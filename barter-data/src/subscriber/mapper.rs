@@ -63,7 +63,7 @@ impl SubscriptionMapper for WebSocketSubMapper {
                 exchange_sub
             })
             .collect::<Vec<ExchangeSub<Exchange::Channel, Exchange::Market>>>();
-
+        // println!("{exchange_subs:}");
         // Construct WebSocket message subscriptions requests
         let ws_subscriptions = Exchange::requests(exchange_subs);
 

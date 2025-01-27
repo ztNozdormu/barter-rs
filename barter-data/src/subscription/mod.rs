@@ -84,7 +84,7 @@ where
 }
 
 #[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, Deserialize, Serialize,
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, Deserialize, Serialize,
 )]
 pub enum SubKind {
     PublicTrades,
@@ -94,7 +94,7 @@ pub enum SubKind {
     Liquidations,
     Candles,
     Tickers,
-    KLines(u32),
+    KLines(String),
 }
 
 impl<Exchange, S, Kind> From<(Exchange, S, S, MarketDataInstrumentKind, Kind)>

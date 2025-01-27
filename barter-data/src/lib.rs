@@ -164,6 +164,7 @@ pub mod transformer;
 pub use barter_instrument;
 
 pub use derive_more;
+use serde::de::DeserializeOwned;
 
 /// Convenient type alias for an [`ExchangeStream`] utilising a tungstenite
 /// [`WebSocket`](barter_integration::protocol::websocket::WebSocket).

@@ -23,7 +23,7 @@ async fn main() {
     // '--> each call to StreamBuilder::subscribe() creates a separate WebSocket connection
     let streams = Streams::<KLines>::builder()
         .subscribe([
-            (BinanceFuturesUsd::default(), "btc", "usdt", MarketDataInstrumentKind::Perpetual, KLines{iv:1}),
+            (BinanceFuturesUsd::default(), "btc", "usdt", MarketDataInstrumentKind::Perpetual, KLines{iv:"1m"}),
             // (BinanceFuturesUsd::default(), "eth", "usdt", MarketDataInstrumentKind::Perpetual, Tickers),
         ])
         .init()

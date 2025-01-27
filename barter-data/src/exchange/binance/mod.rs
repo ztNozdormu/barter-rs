@@ -18,6 +18,7 @@ use crate::{
 use barter_instrument::exchange::ExchangeId;
 use barter_integration::{error::SocketError, protocol::websocket::WsMessage};
 use std::{fmt::Debug, marker::PhantomData};
+use tracing::info;
 use url::Url;
 use crate::exchange::binance::futures::kline::BinanceKline;
 use crate::exchange::binance::futures::ticker::BinanceTicker;
@@ -91,7 +92,7 @@ where
                 )
             })
             .collect::<Vec<String>>();
-
+        info!("{stream_names:?}");
         vec![WsMessage::text(
             serde_json::json!({
                 "method": "SUBSCRIBE",

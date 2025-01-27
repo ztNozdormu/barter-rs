@@ -1,5 +1,4 @@
 use super::SubscriptionKind;
-use barter_macro::{DeSubKind, SerSubKind};
 use chrono::{DateTime, Utc};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
@@ -7,11 +6,16 @@ use serde::{Deserialize, Serialize};
 /// Barter [`Subscription`](super::Subscription) [`SubscriptionKind`] that yields [`Kline`]
 /// market events.
 #[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize, Serialize,
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize, Serialize,
 )]
 pub struct KLines {
-    pub iv: u32,
+    pub iv: &'static str,
 }
+
+// #[derive(Clone)]
+// pub struct KLineParams {
+//     pub timeframe: String,
+// }
 
 impl SubscriptionKind for KLines {
     type Event = KLine;

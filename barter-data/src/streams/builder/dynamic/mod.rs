@@ -769,7 +769,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
             .chain(tikers)
             .chain(klines);
 
-        futures_util::stream::select_all::select_all(all)
+        select_all::select_all(all)
     }
 }
 

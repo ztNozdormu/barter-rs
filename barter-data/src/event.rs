@@ -1,3 +1,4 @@
+use crate::subscription::kline::KLine;
 use crate::{
     error::DataError,
     streams::consumer::MarketStreamResult,
@@ -13,7 +14,6 @@ use barter_instrument::{exchange::ExchangeId, instrument::market_data::MarketDat
 use chrono::{DateTime, Utc};
 use derive_more::From;
 use serde::{Deserialize, Serialize};
-use crate::subscription::kline::{KLine, KLines};
 
 /// Convenient new type containing a collection of [`MarketEvent<T>`](MarketEvent)s.
 #[derive(Debug)]
