@@ -1,5 +1,7 @@
 use self::liquidation::BinanceLiquidation;
 use super::{Binance, ExchangeServer};
+use crate::exchange::binance::futures::kline::BinanceKline;
+use crate::subscription::kline::KLines;
 use crate::{
     exchange::{
         binance::futures::l2::{
@@ -8,7 +10,7 @@ use crate::{
         StreamSelector,
     },
     instrument::InstrumentData,
-    subscription::{book::OrderBooksL2, liquidation::Liquidations, ticker::Tikers},
+    subscription::{book::OrderBooksL2, liquidation::Liquidations},
     transformer::stateless::StatelessTransformer,
     ExchangeWsStream, NoInitialSnapshots,
 };
@@ -62,6 +64,16 @@ where
     type SnapFetcher = NoInitialSnapshots;
     type Stream = ExchangeWsStream<
         StatelessTransformer<Self, Instrument::Key, Liquidations, BinanceLiquidation>,
+    >;
+}
+
+impl<Instrument> StreamSelector<Instrument, KLines> for BinanceFuturesUsd
+where
+    Instrument: InstrumentData,
+{
+    type SnapFetcher = NoInitialSnapshots;
+    type Stream = ExchangeWsStream<
+        StatelessTransformer<Self, Instrument::Key, KLines, BinanceKline>,
     >;
 }
 

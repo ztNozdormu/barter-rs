@@ -51,7 +51,6 @@ use std::io::Read;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use vecmap::VecMap;
 use crate::subscription::kline::{KLine, KLines};
-use crate::subscription::SubKind::KLines;
 use crate::subscription::ticker::Tickers;
 
 pub mod indexed;
@@ -264,17 +263,17 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
                                                     Subscription::<_, Instrument, _>::new(
                                                         BinanceFuturesUsd::default(),
                                                         sub.instrument,
-                                                        KLines(iv),
+                                                        KLines{iv},
                                                     )
                                                 })
                                                 .collect(),
                                         )
-                                            .await
-                                            .map(|stream| {
-                                                tokio::spawn(stream.forward_to(
-                                                    txs.klines.get(&exchange).unwrap().clone(),
-                                                ))
-                                            })
+                                        .await
+                                        .map(|stream| {
+                                            tokio::spawn(stream.forward_to(
+                                                txs.klines.get(&exchange).unwrap().clone(),
+                                            ))
+                                        })
                                     }
                                     (ExchangeId::Bitfinex, SubKind::PublicTrades) => {
                                         init_market_stream(

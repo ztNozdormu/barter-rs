@@ -263,7 +263,7 @@ pub fn exchange_supports_instrument_kind_sub_kind(
 
     match (exchange_id, instrument_kind, sub_kind) {
         (BinanceSpot, Spot, PublicTrades | OrderBooksL1) => true,
-        (BinanceFuturesUsd, Perpetual, PublicTrades | OrderBooksL1 | Liquidations | Tickers | KLines(u32)) => true,
+        (BinanceFuturesUsd, Perpetual, PublicTrades | OrderBooksL1 | Liquidations | Tickers | KLines(..) ) => true,
         (Bitfinex, Spot, PublicTrades) => true,
         (Bitmex, Perpetual, PublicTrades) => true,
         (BybitSpot, Spot, PublicTrades) => true,

@@ -1,12 +1,19 @@
+// use crate::{
+//     event::{MarketEvent, MarketIter},
+//     exchange::{binance::channel::BinanceChannel, ExchangeId, ExchangeSub},
+//     Identifier,
+// };
+use super::super::BinanceChannel;
+use crate::subscription::kline::KLine;
+use crate::{
+    event::{MarketEvent, MarketIter},
+    Identifier,
+};
+use barter_instrument::exchange::ExchangeId;
 use barter_integration::subscription::SubscriptionId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::subscription::kline::Kline;
-use crate::{
-    event::{MarketEvent, MarketIter},
-    exchange::{binance::channel::BinanceChannel, ExchangeId, ExchangeSub},
-    Identifier,
-};
+use crate::exchange::subscription::ExchangeSub;
 
 /// Binance real-time candle message.
 ///
@@ -49,7 +56,7 @@ pub struct BinanceKline {
     #[serde(alias = "k")]
     pub kline: BinanceKlineData,
 }
-/// [`BinanceFuturesUsd`](super::BinanceFuturesUsd) Liquidation order.
+/// [`BinanceFuturesUsd`](super::BinanceFuturesUsd) kline.
 ///
 /// ### Raw Payload Examples
 /// ```json
@@ -122,8 +129,9 @@ impl Identifier<Option<SubscriptionId>> for BinanceKline {
     }
 }
 
+
 impl<InstrumentKey> From<(ExchangeId, InstrumentKey, BinanceKline)>
-for MarketIter<InstrumentKey, Kline>
+for MarketIter<InstrumentKey, KLine>
 {
     fn from(
         (exchange_id, instrument, kline): (ExchangeId, InstrumentKey, BinanceKline),
@@ -133,7 +141,7 @@ for MarketIter<InstrumentKey, Kline>
             time_received: Utc::now(),
             exchange: exchange_id,
             instrument,
-            kind: Kline {
+            kind: KLine {
                 close_time: kline.kline.close_time,
                 open: kline.kline.open,
                 high: kline.kline.high,

@@ -4,13 +4,14 @@ use crate::{
         book::{OrderBooksL1, OrderBooksL2},
         candle::Candles,
         liquidation::Liquidations,
-        ticker::Tikers,
+        ticker::Tickers,
         trade::PublicTrades,
         Subscription,
     },
     Identifier,
 };
 use serde::Serialize;
+use crate::subscription::kline::KLines;
 
 /// Type that defines how to translate a Barter [`Subscription`] into a [`Binance`]
 /// channel to be subscribed to.
@@ -105,10 +106,18 @@ impl<Instrument> Identifier<BinanceChannel>
 }
 
 impl<Instrument> Identifier<BinanceChannel>
-    for Subscription<BinanceFuturesUsd, Instrument, Tikers>
+    for Subscription<BinanceFuturesUsd, Instrument, Tickers>
 {
     fn id(&self) -> BinanceChannel {
         BinanceChannel::TICKERS
+    }
+}
+
+impl<Instrument> Identifier<BinanceChannel>
+for Subscription<BinanceFuturesUsd, Instrument, KLines>
+{
+    fn id(&self) -> BinanceChannel {
+        BinanceChannel::KLINES
     }
 }
 

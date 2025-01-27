@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
     Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize, Serialize,
 )]
 pub struct KLines {
-    pub iv: i32,
+    pub iv: u32,
 }
 
 impl SubscriptionKind for KLines {

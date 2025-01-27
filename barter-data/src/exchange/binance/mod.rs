@@ -8,7 +8,7 @@ use crate::{
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
     subscription::{
         book::OrderBooksL1,
-        ticker::Tikers,
+        ticker::Tickers,
         trade::PublicTrades,
         Map,
     },
@@ -19,7 +19,9 @@ use barter_instrument::exchange::ExchangeId;
 use barter_integration::{error::SocketError, protocol::websocket::WsMessage};
 use std::{fmt::Debug, marker::PhantomData};
 use url::Url;
+use crate::exchange::binance::futures::kline::BinanceKline;
 use crate::exchange::binance::futures::ticker::BinanceTicker;
+use crate::subscription::kline::KLines;
 
 /// OrderBook types common to both [`BinanceSpot`](spot::BinanceSpot) and
 /// [`BinanceFuturesUsd`](futures::BinanceFuturesUsd).
@@ -126,15 +128,25 @@ where
     >;
 }
 
-impl<Instrument, Server> StreamSelector<Instrument, Tikers> for Binance<Server>
+impl<Instrument, Server> StreamSelector<Instrument, Tickers> for Binance<Server>
 where
     Instrument: InstrumentData,
     Server: ExchangeServer + Debug + Send + Sync,
 {
     type SnapFetcher = NoInitialSnapshots;
     type Stream =
-        ExchangeWsStream<StatelessTransformer<Self, Instrument::Key, Tikers, BinanceTicker>>;
+        ExchangeWsStream<StatelessTransformer<Self, Instrument::Key, Tickers, BinanceTicker>>;
 }
+
+// impl<Instrument, Server> StreamSelector<Instrument, KLines> for Binance<Server>
+// where
+//     Instrument: InstrumentData,
+//     Server: ExchangeServer + Debug + Send + Sync,
+// {
+//     type SnapFetcher = NoInitialSnapshots;
+//     type Stream =
+//     ExchangeWsStream<StatelessTransformer<Self, Instrument::Key, KLines, BinanceKline>>;
+// }
 
 impl<'de, Server> serde::Deserialize<'de> for Binance<Server>
 where

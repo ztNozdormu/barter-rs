@@ -13,6 +13,7 @@ use barter_instrument::{exchange::ExchangeId, instrument::market_data::MarketDat
 use chrono::{DateTime, Utc};
 use derive_more::From;
 use serde::{Deserialize, Serialize};
+use crate::subscription::kline::{KLine, KLines};
 
 /// Convenient new type containing a collection of [`MarketEvent<T>`](MarketEvent)s.
 #[derive(Debug)]
@@ -129,6 +130,7 @@ pub enum DataKind {
     Candle(Candle),
     Liquidation(Liquidation),
     Ticker(Ticker),
+    KLine(KLine)
 }
 
 impl DataKind {
@@ -140,6 +142,7 @@ impl DataKind {
             DataKind::Candle(_) => "candle",
             DataKind::Liquidation(_) => "liquidation",
             DataKind::Ticker(_) => "ticker",
+            DataKind::KLine(_) => "kline",
         }
     }
 }
@@ -237,5 +240,21 @@ impl<InstrumentKey> From<MarketEvent<InstrumentKey, Ticker>>
 {
     fn from(value: MarketEvent<InstrumentKey, Ticker>) -> Self {
         value.map_kind(Ticker::into)
+    }
+}
+
+impl<InstrumentKey> From<MarketStreamResult<InstrumentKey, KLine>>
+for MarketStreamResult<InstrumentKey, DataKind>
+{
+    fn from(value: MarketStreamResult<InstrumentKey, KLine>) -> Self {
+        value.map_ok(MarketEvent::from)
+    }
+}
+
+impl<InstrumentKey> From<MarketEvent<InstrumentKey, KLine>>
+for MarketEvent<InstrumentKey, DataKind>
+{
+    fn from(value: MarketEvent<InstrumentKey, KLine>) -> Self {
+        value.map_kind(KLine::into)
     }
 }
