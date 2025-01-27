@@ -117,14 +117,14 @@ for Subscription<BinanceFuturesUsd, Instrument, KLines>
 
 impl AsRef<str> for BinanceChannel {
     fn as_ref(&self) -> &str {
-        // self.0
-        // let concatenated: Cow<str> = if self.1.is_empty() {
-            if self.1.is_empty() {
-            Cow::Owned(format!("{}", self.0)).as_ref()
-
-        } else {
-            Cow::Owned(format!("{}_{}", self.0, self.1)).as_ref()
-        }
-        // concatenated.as_ref()
+        self.0
+        // // let concatenated: Cow<str> = if self.1.is_empty() {
+        //     if self.1.is_empty() {
+        //     Cow::Owned(format!("{}", self.0)).as_ref()
+        //
+        // } else {
+        //     Cow::Owned(format!("{}_{}", self.0, self.1)).as_ref()
+        // }
+        // // concatenated.as_ref()
     }
 }
