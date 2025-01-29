@@ -84,7 +84,7 @@ where
 }
 
 #[derive(
-    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, Deserialize, Serialize,
+   Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, Deserialize, Serialize,
 )]
 pub enum SubKind {
     PublicTrades,
@@ -94,8 +94,10 @@ pub enum SubKind {
     Liquidations,
     Candles,
     Tickers,
-    KLines(String),
+    KLines(u32),
 }
+
+// impl Copy for SubKind {}  // Implement `Copy` trait
 
 impl<Exchange, S, Kind> From<(Exchange, S, S, MarketDataInstrumentKind, Kind)>
     for Subscription<Exchange, MarketDataInstrument, Kind>

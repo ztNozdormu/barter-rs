@@ -263,7 +263,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
                                                     Subscription::<_, Instrument, _>::new(
                                                         BinanceFuturesUsd::default(),
                                                         sub.instrument,
-                                                        KLines{iv:&iv},
+                                                        KLines(iv),
                                                     )
                                                 })
                                                 .collect(),
@@ -874,7 +874,7 @@ where
                         rxs.tickers.insert(sub.exchange, rx);
                     }
                 }
-                SubKind::KLines(String) => {
+                SubKind::KLines(iv) => {
                     if let (None, None) =
                         (txs.klines.get(&sub.exchange), rxs.klines.get(&sub.exchange))
                     {
