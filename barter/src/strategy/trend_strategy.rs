@@ -7,7 +7,6 @@ use crate::strategy::algo::AlgoStrategy;
 use crate::strategy::close_positions::{close_open_positions_with_market_orders, ClosePositionsStrategy};
 use crate::strategy::on_disconnect::OnDisconnectStrategy;
 use crate::strategy::on_trading_disabled::OnTradingDisabled;
-use crate::strategy::DefaultStrategyState;
 use barter_data::event::MarketEvent;
 use barter_execution::order::id::{ClientOrderId, StrategyId};
 use barter_execution::order::{Order, OrderKind, RequestCancel, RequestOpen, TimeInForce};

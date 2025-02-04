@@ -8,8 +8,6 @@ use derive_more::Constructor;
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use barter_data::subscription::ticker::Ticker;
-use barter_xchange::exchange::binance::model::Tickers;
 
 /// Defines a state object for tracking and managing the market data state of an instrument.
 ///
