@@ -20,7 +20,7 @@ use serde::Serialize;
 /// See docs: <https://binance-docs.github.io/apidocs/spot/en/#websocket-market-streams>
 /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#websocket-market-streams>
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Serialize)]
-pub struct BinanceChannel(pub &'static str,pub &'static str);
+pub struct BinanceChannel(pub &'static str);
 
 impl BinanceChannel {
 
@@ -33,29 +33,29 @@ impl BinanceChannel {
     /// stream is undocumented.
     ///
     /// See discord: <https://discord.com/channels/910237311332151317/923160222711812126/975712874582388757>
-    pub const TRADES: Self = Self("@trade","");
+    pub const TRADES: Self = Self("@trade");
 
     /// [`Binance`] real-time OrderBook Level1 (top of books) channel name.
     ///
     /// See docs:<https://binance-docs.github.io/apidocs/spot/en/#individual-symbol-book-ticker-streams>
     /// See docs:<https://binance-docs.github.io/apidocs/futures/en/#individual-symbol-book-ticker-streams>
-    pub const ORDER_BOOK_L1: Self = Self("@bookTicker","");
+    pub const ORDER_BOOK_L1: Self = Self("@bookTicker");
 
     /// [`Binance`] OrderBook Level2 channel name (100ms delta updates).
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/spot/en/#diff-depth-stream>
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#diff-book-depth-streams>
-    pub const ORDER_BOOK_L2: Self = Self("@depth@100ms","");
+    pub const ORDER_BOOK_L2: Self = Self("@depth@100ms");
 
     /// [`BinanceFuturesUsd`] liquidation orders channel name.
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
-    pub const LIQUIDATIONS: Self = Self("@forceOrder","");
+    pub const LIQUIDATIONS: Self = Self("@forceOrder");
 
     /// [`BinanceFuturesUsd`] Ticker channel name.
     ///
     /// See docs: <https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/Individual-Symbol-Ticker-Streams>
-    pub const TICKERS: Self = Self("@ticker","");
+    pub const TICKERS: Self = Self("@ticker");
 
     /// [`BinanceFuturesUsd`] kline channel name. <symbol>@kline_<interval>
     ///
@@ -63,7 +63,7 @@ impl BinanceChannel {
     /// [`BinanceFuturesUsd`] kline channel name. <symbol>@kline_<interval>@+08:00
     //
     //  See docs: https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams#klinecandlestick-streams-with-timezone-offset>
-    pub const KLINES: Self = Self("@kline_1m","");
+    pub const KLINES: Self = Self("@kline_1m");
 
 }
 
