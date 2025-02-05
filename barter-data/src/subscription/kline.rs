@@ -31,7 +31,7 @@ impl Display for KLines {
 }
 
 /// Normalised Barter [`Kline`] model.
-#[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Deserialize, Serialize, Default)]
 pub struct KLine {
     pub close_time: DateTime<Utc>,
     pub open: f64,

@@ -8,6 +8,9 @@ use derive_more::Constructor;
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use rust_decimal_macros::dec;
+use barter_data::subscription::kline::{KLine, KLines};
+use barter_xchange::exchange::binance::model::Kline;
 
 /// Defines a state object for tracking and managing the market data state of an instrument.
 ///
@@ -80,6 +83,51 @@ impl<InstrumentKey> Processor<&MarketEvent<InstrumentKey, DataKind>> for Default
                 if self.l1.last_update_time < event.time_exchange {
                     self.l1 = l1.clone()
                 }
+            }
+            _ => {}
+        }
+    }
+}
+
+
+
+/// Basic [`MarketDataState`] that tracks the [`Kline`] and sets traded kline for an
+/// instrument.
+///
+/// Trading strategies may wish to maintain more data here, such as candles, indicators,
+/// KLines , etc.
+#[derive(
+    Debug, Clone, PartialEq, PartialOrd, Default, Deserialize, Serialize, Constructor,
+)]
+pub struct FeedMarketData {
+    pub closed: bool,
+    pub last_kline: KLine,
+    pub klines: Vec<KLine>,
+}
+
+impl MarketDataState for FeedMarketData {
+    type EventKind = DataKind;
+    fn price(&self) -> Option<Decimal>  {
+        Some(Decimal::from_f64(self.last_kline.close).unwrap_or(dec!(0.0)))
+    }
+}
+
+impl<InstrumentKey> Processor<&MarketEvent<InstrumentKey, DataKind>> for FeedMarketData {
+    type Audit = ();
+
+    fn process(&mut self, event: &MarketEvent<InstrumentKey, DataKind>) -> Self::Audit {
+        match &event.kind {
+            DataKind::KLine(kline) => {
+                self.closed = kline.closed;
+                self.last_kline = kline.clone();
+                // TODO init klines sets
+                if self.klines.is_empty() {
+
+                }
+                // if self.closed
+                // {
+                //     self.klines.push(kline.clone())
+                // }
             }
             _ => {}
         }

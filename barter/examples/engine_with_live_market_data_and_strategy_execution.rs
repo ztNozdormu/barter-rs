@@ -5,7 +5,7 @@ use barter::{
         command::Command,
         run,
         state::{
-            instrument::{filter::InstrumentFilter, market_data::DefaultMarketData},
+            instrument::{filter::InstrumentFilter, market_data::FeedMarketData},
             trading::TradingState,
             EngineState,
         },
@@ -82,7 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialise MarketData Stream & forward to Engine feed
     let market_stream = init_indexed_multi_exchange_market_stream(
         &instruments,
-        &[SubKind::OrderBooksL1],
+        &[SubKind::KLines(1)],
     )
     .await?;
     tokio::spawn(market_stream.forward_to(feed_tx.clone()));
@@ -92,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Construct EngineState from IndexedInstruments and hard-coded exchange asset Balances
     let state =
-        EngineState::<DefaultMarketData, TrendStrategyState, DefaultRiskManagerState>::builder(
+        EngineState::<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>::builder(
             &instruments,
         )
         .time_engine_start(clock.time())
@@ -190,7 +190,7 @@ fn indexed_instruments() -> IndexedInstruments {
             "binance_spot_btc_usdt",
             "BTCUSDT",
             Underlying::new("btc", "usdt"),
-            InstrumentKind::Spot,
+            InstrumentKind::Perpetual {},
             Some(InstrumentSpec::new(
                 InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
                 InstrumentSpecQuantity::new(

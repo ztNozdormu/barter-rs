@@ -1,5 +1,5 @@
 use crate::engine::state::instrument::filter::InstrumentFilter;
-use crate::engine::state::instrument::market_data::{DefaultMarketData, MarketDataState};
+use crate::engine::state::instrument::market_data::{FeedMarketData, MarketDataState};
 use crate::engine::state::EngineState;
 use crate::engine::{Engine, Processor};
 use crate::risk::DefaultRiskManagerState;
@@ -20,6 +20,8 @@ use barter_instrument::{
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::FromPrimitive;
 use tracing::info;
 
 /// Naive implementation of all strategy interfaces.
@@ -45,11 +47,9 @@ impl<State> Default for TrendStrategy<State> {
         }
     }
 }
-// impl<State, ExchangeKey, InstrumentKey> AlgoStrategy<ExchangeKey, InstrumentKey>
-// for TrendStrategy<State>
-// {}
+
 impl<State> AlgoStrategy for TrendStrategy<State> {
-    type State = EngineState<DefaultMarketData, TrendStrategyState, DefaultRiskManagerState>;
+    type State = EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>;
 
     fn generate_algo_orders(
         &self,
@@ -73,6 +73,8 @@ impl<State> AlgoStrategy for TrendStrategy<State> {
             // Don't open if there is no market data price available
             let price = state.market.price()?;
             info!("{price:?}");
+            let last_kline = state.market.last_kline;
+            info!("{last_kline:?}");
             // Generate Market order to buy the minimum allowed quantity
             Some(Order {
                 exchange: state.instrument.exchange,
