@@ -45,8 +45,9 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use tracing::debug;
 use barter::strategy::trend_strategy::{TrendStrategy, TrendStrategyState};
+use barter_instrument::asset::Asset;
 
-const EXCHANGE: ExchangeId = ExchangeId::BinanceSpot;
+const EXCHANGE: ExchangeId = ExchangeId::BinanceFuturesUsd;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
 const MOCK_EXCHANGE_ROUND_TRIP_LATENCY_MS: u64 = 100;
 const MOCK_EXCHANGE_FEES_PERCENT: Decimal = dec!(0.05);
@@ -187,10 +188,10 @@ fn indexed_instruments() -> IndexedInstruments {
     IndexedInstruments::builder()
         .add_instrument(Instrument::new(
             EXCHANGE,
-            "binance_spot_btc_usdt",
+            "binance_perpetual_btc_usdt",
             "BTCUSDT",
             Underlying::new("btc", "usdt"),
-            InstrumentKind::Perpetual { settlement_asset: () },
+            InstrumentKind::Perpetual { settlement_asset: Asset::from("btc") },
             Some(InstrumentSpec::new(
                 InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
                 InstrumentSpecQuantity::new(
@@ -201,29 +202,29 @@ fn indexed_instruments() -> IndexedInstruments {
                 InstrumentSpecNotional::new(dec!(5.0)),
             )),
         ))
-        .add_instrument(Instrument::new(
-            EXCHANGE,
-            "binance_spot_eth_usdt",
-            "ETHUSDT",
-            Underlying::new("eth", "usdt"),
-            InstrumentKind::Spot,
-            Some(InstrumentSpec::new(
-                InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
-                InstrumentSpecQuantity::new(OrderQuantityUnits::Quote, dec!(0.0001), dec!(0.0001)),
-                InstrumentSpecNotional::new(dec!(5.0)),
-            )),
-        ))
-        .add_instrument(Instrument::new(
-            EXCHANGE,
-            "binance_spot_sol_usdt",
-            "SOLUSDT",
-            Underlying::new("sol", "usdt"),
-            InstrumentKind::Spot,
-            Some(InstrumentSpec::new(
-                InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
-                InstrumentSpecQuantity::new(OrderQuantityUnits::Quote, dec!(0.001), dec!(0.001)),
-                InstrumentSpecNotional::new(dec!(5.0)),
-            )),
-        ))
+        // .add_instrument(Instrument::new(
+        //     EXCHANGE,
+        //     "binance_spot_eth_usdt",
+        //     "ETHUSDT",
+        //     Underlying::new("eth", "usdt"),
+        //     InstrumentKind::Spot,
+        //     Some(InstrumentSpec::new(
+        //         InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
+        //         InstrumentSpecQuantity::new(OrderQuantityUnits::Quote, dec!(0.0001), dec!(0.0001)),
+        //         InstrumentSpecNotional::new(dec!(5.0)),
+        //     )),
+        // ))
+        // .add_instrument(Instrument::new(
+        //     EXCHANGE,
+        //     "binance_spot_sol_usdt",
+        //     "SOLUSDT",
+        //     Underlying::new("sol", "usdt"),
+        //     InstrumentKind::Spot,
+        //     Some(InstrumentSpec::new(
+        //         InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
+        //         InstrumentSpecQuantity::new(OrderQuantityUnits::Quote, dec!(0.001), dec!(0.001)),
+        //         InstrumentSpecNotional::new(dec!(5.0)),
+        //     )),
+        // ))
         .build()
 }
