@@ -190,7 +190,7 @@ fn indexed_instruments() -> IndexedInstruments {
             "binance_spot_btc_usdt",
             "BTCUSDT",
             Underlying::new("btc", "usdt"),
-            InstrumentKind::Perpetual {},
+            InstrumentKind::Perpetual { settlement_asset: () },
             Some(InstrumentSpec::new(
                 InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
                 InstrumentSpecQuantity::new(
