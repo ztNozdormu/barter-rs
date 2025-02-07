@@ -158,12 +158,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::time::sleep(std::time::Duration::from_secs(4)).await;
     // 1. Disable Strategy order generation (still continues to update EngineState)
     feed_tx.send(TradingState::Disabled)?;
-    // 2. Cancel all open orders
-    feed_tx.send(Command::CancelOrders(InstrumentFilter::None))?;
-    // 3. Send orders to close current positions
-    feed_tx.send(Command::ClosePositions(InstrumentFilter::None))?;
-    // 4. Stop Engine run loop
-    feed_tx.send(EngineEvent::Shutdown)?;
+    // // 2. Cancel all open orders
+    // feed_tx.send(Command::CancelOrders(InstrumentFilter::None))?;
+    // // 3. Send orders to close current positions
+    // feed_tx.send(Command::ClosePositions(InstrumentFilter::None))?;
+    // // 4. Stop Engine run loop
+    // feed_tx.send(EngineEvent::Shutdown)?;
 
     // Await Engine & AuditStream task graceful shutdown
     // Note: Engine & AuditStream returned, ready for further use
