@@ -46,7 +46,6 @@ use rust_decimal_macros::dec;
 use tracing::debug;
 use barter::strategy::trend_strategy::{TrendStrategy, TrendStrategyState};
 use barter_instrument::asset::Asset;
-use barter_instrument::instrument::market_data::kind::MarketDataInstrumentKind;
 
 const EXCHANGE: ExchangeId = ExchangeId::BinanceFuturesUsd;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
@@ -186,15 +185,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn indexed_instruments() -> IndexedInstruments {
-
-    // Asset
     IndexedInstruments::builder()
         .add_instrument(Instrument::new(
             EXCHANGE,
             "binance_perpetual_btc_usdt",
             "BTCUSDT",
             Underlying::new("btc", "usdt"),
-           InstrumentKind::Perpetual { settlement_asset: Asset::from("btc") },
+            InstrumentKind::Perpetual { settlement_asset: Asset::from("btc") },
             Some(InstrumentSpec::new(
                 InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
                 InstrumentSpecQuantity::new(
