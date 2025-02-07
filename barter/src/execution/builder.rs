@@ -250,6 +250,11 @@ fn generate_mock_exchange_instruments(
 
                 let kind = match kind {
                     InstrumentKind::Spot => InstrumentKind::Spot,
+                    InstrumentKind::Perpetual { .. } => InstrumentKind::Perpetual {settlement_asset: instruments
+                        .find_asset(*base)
+                        .unwrap()
+                        .asset
+                        .name_exchange.clone()},
                     unsupported => {
                         panic!("MockExchange does not support: {unsupported:?}")
                     }
