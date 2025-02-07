@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     event::{MarketEvent, MarketIter},
     exchange::{binance::channel::BinanceChannel, ExchangeId, ExchangeSub},
+    subscription::ticker::Ticker,
     Identifier,
 };
-use crate::subscription::ticker::Ticker;
 
 /// Binance real-time trade message.
 ///

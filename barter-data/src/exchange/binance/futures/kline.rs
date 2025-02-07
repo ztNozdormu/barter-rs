@@ -4,16 +4,16 @@
 //     Identifier,
 // };
 use super::super::BinanceChannel;
-use crate::subscription::kline::KLine;
 use crate::{
     event::{MarketEvent, MarketIter},
+    exchange::subscription::ExchangeSub,
+    subscription::kline::KLine,
     Identifier,
 };
 use barter_instrument::exchange::ExchangeId;
 use barter_integration::subscription::SubscriptionId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::exchange::subscription::ExchangeSub;
 
 /// Binance real-time candle message.
 ///
@@ -53,7 +53,6 @@ use crate::exchange::subscription::ExchangeSub;
 /// ```
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct BinanceKline {
-
     #[serde(alias = "k")]
     pub kline: BinanceKlineData,
 }
@@ -130,13 +129,10 @@ impl Identifier<Option<SubscriptionId>> for BinanceKline {
     }
 }
 
-
 impl<InstrumentKey> From<(ExchangeId, InstrumentKey, BinanceKline)>
-for MarketIter<InstrumentKey, KLine>
+    for MarketIter<InstrumentKey, KLine>
 {
-    fn from(
-        (exchange_id, instrument, kline): (ExchangeId, InstrumentKey, BinanceKline),
-    ) -> Self {
+    fn from((exchange_id, instrument, kline): (ExchangeId, InstrumentKey, BinanceKline)) -> Self {
         Self(vec![Ok(MarketEvent {
             time_exchange: kline.kline.close_time,
             time_received: Utc::now(),
@@ -165,7 +161,6 @@ where
     <&str as Deserialize>::deserialize(deserializer)
         .map(|market| ExchangeSub::from((BinanceChannel::KLINES, market)).id())
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -220,13 +215,14 @@ mod tests {
                         buy_base_asset_volume: 500f64,
                         buy_quote_asset_volume: 0.500,
                         start_time: datetime_utc_from_epoch_duration(Duration::from_millis(
-                            1672515780000)),
+                            1672515780000
+                        )),
                         close_time: datetime_utc_from_epoch_duration(Duration::from_millis(
-                            1672515839999)),
+                            1672515839999
+                        )),
                     },
                 }
             );
         }
     }
 }
-

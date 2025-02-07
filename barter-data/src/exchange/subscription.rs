@@ -39,7 +39,6 @@ pub struct ExchangeSub<Channel, Market> {
     /// - [`BinanceMarket("btcusdt")`](super::binance::market::BinanceMarket)
     /// - [`KrakenMarket("BTC/USDT")`](super::kraken::market::KrakenMarket)
     pub market: Market,
-    
 }
 
 impl<Channel, Market> Identifier<SubscriptionId> for ExchangeSub<Channel, Market>

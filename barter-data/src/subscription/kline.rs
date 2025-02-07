@@ -5,16 +5,14 @@ use serde::{Deserialize, Serialize};
 
 /// Barter [`Subscription`](super::Subscription) [`SubscriptionKind`] that yields [`Kline`]
 /// market events.
-#[derive(
-    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize, Serialize,
-)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize, Serialize)]
 pub struct KLines(pub u32);
 
 impl SubscriptionKind for KLines {
     type Event = KLine;
     fn as_str(&self) -> &'static str {
         const STATIC_PREFIX: &str = "KLines"; // 定义一个静态常量
-        // 把数字转换为字符串并拼接
+                                              // 把数字转换为字符串并拼接
         let combined = format!("{}{}", STATIC_PREFIX, self.0);
 
         // 这会引发问题，因为 combined 是一个临时的 String

@@ -1,10 +1,10 @@
-use crate::subscription::kline::KLine;
 use crate::{
     error::DataError,
     streams::consumer::MarketStreamResult,
     subscription::{
         book::{OrderBookEvent, OrderBookL1},
         candle::Candle,
+        kline::KLine,
         liquidation::Liquidation,
         ticker::Ticker,
         trade::PublicTrade,
@@ -130,7 +130,7 @@ pub enum DataKind {
     Candle(Candle),
     Liquidation(Liquidation),
     Ticker(Ticker),
-    KLine(KLine)
+    KLine(KLine),
 }
 
 impl DataKind {
@@ -244,7 +244,7 @@ impl<InstrumentKey> From<MarketEvent<InstrumentKey, Ticker>>
 }
 
 impl<InstrumentKey> From<MarketStreamResult<InstrumentKey, KLine>>
-for MarketStreamResult<InstrumentKey, DataKind>
+    for MarketStreamResult<InstrumentKey, DataKind>
 {
     fn from(value: MarketStreamResult<InstrumentKey, KLine>) -> Self {
         value.map_ok(MarketEvent::from)
@@ -252,7 +252,7 @@ for MarketStreamResult<InstrumentKey, DataKind>
 }
 
 impl<InstrumentKey> From<MarketEvent<InstrumentKey, KLine>>
-for MarketEvent<InstrumentKey, DataKind>
+    for MarketEvent<InstrumentKey, DataKind>
 {
     fn from(value: MarketEvent<InstrumentKey, KLine>) -> Self {
         value.map_kind(KLine::into)

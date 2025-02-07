@@ -1,12 +1,11 @@
 use barter_data::{
     exchange::binance::futures::BinanceFuturesUsd,
     streams::{reconnect::stream::ReconnectingStream, Streams},
-    subscription::ticker::Tickers,
+    subscription::{ticker::Tickers, SubKind::Candles},
 };
 use barter_instrument::instrument::market_data::kind::MarketDataInstrumentKind;
 use futures::StreamExt;
 use tracing::{info, warn};
-use barter_data::subscription::SubKind::Candles;
 
 #[rustfmt::skip]
 #[tokio::main]

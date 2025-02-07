@@ -1,16 +1,18 @@
 use crate::{engine::Processor, Timed};
 use barter_data::{
     event::{DataKind, MarketEvent},
-    subscription::book::OrderBookL1,
+    subscription::{
+        book::OrderBookL1,
+        kline::{KLine, KLines},
+    },
 };
 use barter_instrument::instrument::InstrumentIndex;
+use barter_xchange::exchange::binance::model::Kline;
 use derive_more::Constructor;
 use rust_decimal::{prelude::FromPrimitive, Decimal};
+use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use rust_decimal_macros::dec;
-use barter_data::subscription::kline::{KLine, KLines};
-use barter_xchange::exchange::binance::model::Kline;
 
 /// Defines a state object for tracking and managing the market data state of an instrument.
 ///
@@ -89,16 +91,12 @@ impl<InstrumentKey> Processor<&MarketEvent<InstrumentKey, DataKind>> for Default
     }
 }
 
-
-
 /// Basic [`MarketDataState`] that tracks the [`Kline`] and sets traded kline for an
 /// instrument.
 ///
 /// Trading strategies may wish to maintain more data here, such as candles, indicators,
 /// KLines , etc.
-#[derive(
-    Debug, Clone, PartialEq, PartialOrd, Default, Deserialize, Serialize, Constructor,
-)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Default, Deserialize, Serialize, Constructor)]
 pub struct FeedMarketData {
     pub closed: bool,
     pub last_kline: KLine,
@@ -107,7 +105,7 @@ pub struct FeedMarketData {
 
 impl MarketDataState for FeedMarketData {
     type EventKind = DataKind;
-    fn price(&self) -> Option<Decimal>  {
+    fn price(&self) -> Option<Decimal> {
         Some(Decimal::from_f64(self.last_kline.close).unwrap_or(dec!(0.0)))
     }
 }
@@ -121,9 +119,7 @@ impl<InstrumentKey> Processor<&MarketEvent<InstrumentKey, DataKind>> for FeedMar
                 self.closed = kline.closed;
                 self.last_kline = kline.clone();
                 // TODO init klines sets
-                if self.klines.is_empty() {
-
-                }
+                if self.klines.is_empty() {}
                 // if self.closed
                 // {
                 //     self.klines.push(kline.clone())

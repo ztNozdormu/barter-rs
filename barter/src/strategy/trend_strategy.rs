@@ -1,27 +1,40 @@
-use crate::engine::state::instrument::filter::InstrumentFilter;
-use crate::engine::state::instrument::market_data::{FeedMarketData, MarketDataState};
-use crate::engine::state::EngineState;
-use crate::engine::{Engine, Processor};
-use crate::risk::DefaultRiskManagerState;
-use crate::strategy::algo::AlgoStrategy;
-use crate::strategy::close_positions::{close_open_positions_with_market_orders, ClosePositionsStrategy};
-use crate::strategy::on_disconnect::OnDisconnectStrategy;
-use crate::strategy::on_trading_disabled::OnTradingDisabled;
+use crate::{
+    engine::{
+        state::{
+            instrument::{
+                filter::InstrumentFilter,
+                market_data::{FeedMarketData, MarketDataState},
+            },
+            EngineState,
+        },
+        Engine, Processor,
+    },
+    risk::DefaultRiskManagerState,
+    strategy::{
+        algo::AlgoStrategy,
+        close_positions::{close_open_positions_with_market_orders, ClosePositionsStrategy},
+        on_disconnect::OnDisconnectStrategy,
+        on_trading_disabled::OnTradingDisabled,
+    },
+};
 use barter_data::event::MarketEvent;
-use barter_execution::order::id::{ClientOrderId, StrategyId};
-use barter_execution::order::{Order, OrderKind, RequestCancel, RequestOpen, TimeInForce};
-use barter_execution::AccountEvent;
+use barter_execution::{
+    order::{
+        id::{ClientOrderId, StrategyId},
+        Order, OrderKind, RequestCancel, RequestOpen, TimeInForce,
+    },
+    AccountEvent,
+};
 use barter_instrument::{
     asset::AssetIndex,
     exchange::{ExchangeId, ExchangeIndex},
     instrument::InstrumentIndex,
     Side,
 };
+use rust_decimal::{prelude::FromPrimitive, Decimal};
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
-use rust_decimal::Decimal;
-use rust_decimal::prelude::FromPrimitive;
 use tracing::info;
 
 /// Naive implementation of all strategy interfaces.
@@ -58,7 +71,6 @@ impl<State> AlgoStrategy for TrendStrategy<State> {
         impl IntoIterator<Item = Order<ExchangeIndex, InstrumentIndex, RequestCancel>>,
         impl IntoIterator<Item = Order<ExchangeIndex, InstrumentIndex, RequestOpen>>,
     ) {
-
         let opens = state.instruments.instruments().filter_map(|state| {
             // Don't open more if we have a Position already
             if state.position.is_some() {
@@ -95,7 +107,7 @@ impl<State> AlgoStrategy for TrendStrategy<State> {
 }
 
 impl<MarketState, StrategyState, RiskState> ClosePositionsStrategy
-for TrendStrategy<EngineState<MarketState, StrategyState, RiskState>>
+    for TrendStrategy<EngineState<MarketState, StrategyState, RiskState>>
 where
     MarketState: MarketDataState,
 {
@@ -119,7 +131,7 @@ where
 }
 
 impl<Clock, State, ExecutionTxs, Risk> OnDisconnectStrategy<Clock, State, ExecutionTxs, Risk>
-for TrendStrategy<State>
+    for TrendStrategy<State>
 {
     type OnDisconnect = ();
 
@@ -131,7 +143,7 @@ for TrendStrategy<State>
 }
 
 impl<Clock, State, ExecutionTxs, Risk> OnTradingDisabled<Clock, State, ExecutionTxs, Risk>
-for TrendStrategy<State>
+    for TrendStrategy<State>
 {
     type OnTradingDisabled = ();
 
@@ -148,7 +160,7 @@ for TrendStrategy<State>
 pub struct TrendStrategyState;
 
 impl<ExchangeKey, AssetKey, InstrumentKey>
-Processor<&AccountEvent<ExchangeKey, AssetKey, InstrumentKey>> for TrendStrategyState
+    Processor<&AccountEvent<ExchangeKey, AssetKey, InstrumentKey>> for TrendStrategyState
 {
     type Audit = ();
     fn process(&mut self, _: &AccountEvent<ExchangeKey, AssetKey, InstrumentKey>) -> Self::Audit {}
@@ -158,7 +170,6 @@ impl<InstrumentKey, Kind> Processor<&MarketEvent<InstrumentKey, Kind>> for Trend
     type Audit = ();
     fn process(&mut self, _: &MarketEvent<InstrumentKey, Kind>) -> Self::Audit {}
 }
-
 
 fn gen_cid(instrument: usize) -> ClientOrderId {
     ClientOrderId::new(InstrumentIndex(instrument).to_string())

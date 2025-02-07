@@ -23,8 +23,9 @@ use crate::{
     },
     subscription::{
         book::{OrderBookEvent, OrderBookL1, OrderBooksL1},
+        kline::{KLine, KLines},
         liquidation::{Liquidation, Liquidations},
-        ticker::Ticker,
+        ticker::{Ticker, Tickers},
         trade::{PublicTrade, PublicTrades},
         SubKind, Subscription,
     },
@@ -45,13 +46,11 @@ use futures_util::{future::try_join_all, StreamExt};
 use itertools::Itertools;
 use std::{
     fmt::{Debug, Display},
+    io::Read,
     sync::Arc,
 };
-use std::io::Read;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use vecmap::VecMap;
-use crate::subscription::kline::{KLine, KLines};
-use crate::subscription::ticker::Tickers;
 
 pub mod indexed;
 
@@ -98,7 +97,7 @@ impl<InstrumentKey> DynamicStreams<InstrumentKey> {
         Subscription<BinanceFuturesUsd, Instrument, PublicTrades>: Identifier<BinanceMarket>,
         Subscription<BinanceFuturesUsd, Instrument, OrderBooksL1>: Identifier<BinanceMarket>,
         Subscription<BinanceFuturesUsd, Instrument, Liquidations>: Identifier<BinanceMarket>,
-        Subscription<BinanceFuturesUsd, Instrument,Tickers >: Identifier<BinanceMarket>,
+        Subscription<BinanceFuturesUsd, Instrument, Tickers>: Identifier<BinanceMarket>,
         Subscription<BinanceFuturesUsd, Instrument, KLines>: Identifier<BinanceMarket>,
         Subscription<Bitfinex, Instrument, PublicTrades>: Identifier<BitfinexMarket>,
         Subscription<Bitmex, Instrument, PublicTrades>: Identifier<BitmexMarket>,
@@ -866,9 +865,10 @@ where
                     }
                 }
                 SubKind::Tickers => {
-                    if let (None, None) =
-                        (txs.tickers.get(&sub.exchange), rxs.tickers.get(&sub.exchange))
-                    {
+                    if let (None, None) = (
+                        txs.tickers.get(&sub.exchange),
+                        rxs.tickers.get(&sub.exchange),
+                    ) {
                         let (tx, rx) = mpsc_unbounded();
                         txs.tickers.insert(sub.exchange, tx);
                         rxs.tickers.insert(sub.exchange, rx);

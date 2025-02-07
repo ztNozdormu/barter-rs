@@ -15,6 +15,7 @@ use barter::{
     logging::init_logging,
     risk::{DefaultRiskManager, DefaultRiskManagerState},
     statistic::time::Daily,
+    strategy::trend_strategy::{TrendStrategy, TrendStrategyState},
     EngineEvent,
 };
 use barter_data::{
@@ -26,6 +27,7 @@ use barter_data::{
 };
 use barter_execution::{balance::Balance, client::mock::MockExecutionConfig};
 use barter_instrument::{
+    asset::Asset,
     exchange::ExchangeId,
     index::IndexedInstruments,
     instrument::{
@@ -44,8 +46,6 @@ use futures::StreamExt;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use tracing::debug;
-use barter::strategy::trend_strategy::{TrendStrategy, TrendStrategyState};
-use barter_instrument::asset::Asset;
 
 const EXCHANGE: ExchangeId = ExchangeId::BinanceFuturesUsd;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
@@ -81,11 +81,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let instruments = indexed_instruments();
 
     // Initialise MarketData Stream & forward to Engine feed
-    let market_stream = init_indexed_multi_exchange_market_stream(
-        &instruments,
-        &[SubKind::KLines(1)],
-    )
-    .await?;
+    let market_stream =
+        init_indexed_multi_exchange_market_stream(&instruments, &[SubKind::KLines(1)]).await?;
     tokio::spawn(market_stream.forward_to(feed_tx.clone()));
 
     // Construct Engine clock
@@ -191,7 +188,9 @@ fn indexed_instruments() -> IndexedInstruments {
             "binance_perpetual_btc_usdt",
             "BTCUSDT",
             Underlying::new("btc", "usdt"),
-            InstrumentKind::Perpetual { settlement_asset: Asset::from("btc") },
+            InstrumentKind::Perpetual {
+                settlement_asset: Asset::from("btc"),
+            },
             Some(InstrumentSpec::new(
                 InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
                 InstrumentSpecQuantity::new(

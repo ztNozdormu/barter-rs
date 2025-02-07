@@ -1,10 +1,8 @@
-use std::borrow::Cow;
 use super::{futures::BinanceFuturesUsd, Binance};
-use crate::subscription::kline::KLines;
 use crate::{
     subscription::{
-        book::{OrderBooksL1, OrderBooksL2}
-        ,
+        book::{OrderBooksL1, OrderBooksL2},
+        kline::KLines,
         liquidation::Liquidations,
         ticker::Tickers,
         trade::PublicTrades,
@@ -13,6 +11,7 @@ use crate::{
     Identifier,
 };
 use serde::Serialize;
+use std::borrow::Cow;
 
 /// Type that defines how to translate a Barter [`Subscription`] into a [`Binance`]
 /// channel to be subscribed to.
@@ -23,7 +22,6 @@ use serde::Serialize;
 pub struct BinanceChannel(pub &'static str);
 
 impl BinanceChannel {
-
     /// [`Binance`] real-time trades channel name.
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/spot/en/#trade-streams>
@@ -64,7 +62,6 @@ impl BinanceChannel {
     //
     //  See docs: https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams#klinecandlestick-streams-with-timezone-offset>
     pub const KLINES: Self = Self("@kline_1m");
-
 }
 
 impl<Server, Instrument> Identifier<BinanceChannel>
@@ -108,7 +105,7 @@ impl<Instrument> Identifier<BinanceChannel>
 }
 
 impl<Instrument> Identifier<BinanceChannel>
-for Subscription<BinanceFuturesUsd, Instrument, KLines>
+    for Subscription<BinanceFuturesUsd, Instrument, KLines>
 {
     fn id(&self) -> BinanceChannel {
         BinanceChannel::KLINES

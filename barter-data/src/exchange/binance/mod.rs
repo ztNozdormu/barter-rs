@@ -3,15 +3,13 @@ use self::{
     subscription::BinanceSubResponse, trade::BinanceTrade,
 };
 use crate::{
-    exchange::{Connector, ExchangeServer, ExchangeSub, StreamSelector},
+    exchange::{
+        binance::futures::{kline::BinanceKline, ticker::BinanceTicker},
+        Connector, ExchangeServer, ExchangeSub, StreamSelector,
+    },
     instrument::InstrumentData,
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
-    subscription::{
-        book::OrderBooksL1,
-        ticker::Tickers,
-        trade::PublicTrades,
-        Map,
-    },
+    subscription::{book::OrderBooksL1, kline::KLines, ticker::Tickers, trade::PublicTrades, Map},
     transformer::stateless::StatelessTransformer,
     ExchangeWsStream, NoInitialSnapshots,
 };
@@ -20,9 +18,6 @@ use barter_integration::{error::SocketError, protocol::websocket::WsMessage};
 use std::{fmt::Debug, marker::PhantomData};
 use tracing::info;
 use url::Url;
-use crate::exchange::binance::futures::kline::BinanceKline;
-use crate::exchange::binance::futures::ticker::BinanceTicker;
-use crate::subscription::kline::KLines;
 
 /// OrderBook types common to both [`BinanceSpot`](spot::BinanceSpot) and
 /// [`BinanceFuturesUsd`](futures::BinanceFuturesUsd).

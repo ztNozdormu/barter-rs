@@ -12,7 +12,7 @@ use barter::{
     },
     statistic::summary::{
         trading::{Config as StatisticConfig, TradingSummary},
-        Initialiser,
+        Initialiser, TradingSummary,
     },
     strategy::example::{Config as StrategyConfig, RSIStrategy},
 };
@@ -34,7 +34,6 @@ use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 use tracing::warn;
 use tracing_subscriber::util::SubscriberInitExt;
-use barter::statistic::summary::TradingSummary;
 use uuid::Uuid;
 
 const ENGINE_RUN_TIMEOUT: Duration = Duration::from_secs(5);
