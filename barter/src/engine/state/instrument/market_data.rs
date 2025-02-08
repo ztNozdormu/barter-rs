@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use crate::{engine::Processor, Timed};
 use barter_data::{
     event::{DataKind, MarketEvent},
@@ -100,7 +101,25 @@ impl<InstrumentKey> Processor<&MarketEvent<InstrumentKey, DataKind>> for Default
 pub struct FeedMarketData {
     pub closed: bool,
     pub last_kline: KLine,
-    pub klines: Vec<KLine>,
+    pub klines: VecDeque<KLine>,
+}
+
+impl FeedMarketData {
+    // Method to add a KLine to klines, ensuring a max of 500 elements
+    pub fn update(&mut self, kline: KLine) {
+        self.closed = kline.closed;
+        self.last_kline = kline.clone();
+        // If closed is true
+        if self.closed {
+            // If closed is true & there are already 500 elements, remove the oldest one (front of the deque)
+            if self.klines.len() == 500 {
+                // Remove elements from the back (bottom)
+                self.klines.pop_back();
+            }
+            // Add the new kline to the deque
+            self.klines.push_front(kline);
+        }
+    }
 }
 
 impl MarketDataState for FeedMarketData {
@@ -116,14 +135,8 @@ impl<InstrumentKey> Processor<&MarketEvent<InstrumentKey, DataKind>> for FeedMar
     fn process(&mut self, event: &MarketEvent<InstrumentKey, DataKind>) -> Self::Audit {
         match &event.kind {
             DataKind::KLine(kline) => {
-                self.closed = kline.closed;
-                self.last_kline = kline.clone();
-                // TODO init klines sets
-                if self.klines.is_empty() {}
-                // if self.closed
-                // {
-                //     self.klines.push(kline.clone())
-                // }
+                // update FeedMarketData
+                self.update(kline.clone());
             }
             _ => {}
         }

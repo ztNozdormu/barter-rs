@@ -157,26 +157,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Let the example run for 4 seconds..., then:
     tokio::time::sleep(std::time::Duration::from_secs(4)).await;
     // 1. Disable Strategy order generation (still continues to update EngineState)
-    feed_tx.send(TradingState::Disabled)?;
+    // feed_tx.send(TradingState::Disabled)?;
     // // 2. Cancel all open orders
     // feed_tx.send(Command::CancelOrders(InstrumentFilter::None))?;
     // // 3. Send orders to close current positions
     // feed_tx.send(Command::ClosePositions(InstrumentFilter::None))?;
-    // // 4. Stop Engine run loop
+    // 4. Stop Engine run loop
     // feed_tx.send(EngineEvent::Shutdown)?;
-
+    // feed_tx.send(EngineEvent::TradingStateUpdate(TradingState::Enabled))?;
     // Await Engine & AuditStream task graceful shutdown
     // Note: Engine & AuditStream returned, ready for further use
     let (engine, _shutdown_audit) = engine_task.await?;
     let _audit_stream = audit_task.await?;
 
     // Generate TradingSummary<Daily>
-    let trading_summary = engine
-        .trading_summary_generator(RISK_FREE_RETURN)
-        .generate(Daily);
-
-    // Print TradingSummary<Daily> to terminal (could save in a file, send somewhere, etc.)
-    trading_summary.print_summary();
+    // let trading_summary = engine
+    //     .trading_summary_generator(RISK_FREE_RETURN)
+    //     .generate(Daily);
+    //
+    // // Print TradingSummary<Daily> to terminal (could save in a file, send somewhere, etc.)
+    // trading_summary.print_summary();
 
     Ok(())
 }

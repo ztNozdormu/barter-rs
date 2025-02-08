@@ -84,9 +84,13 @@ impl<State> AlgoStrategy for TrendStrategy<State> {
 
             // Don't open if there is no market data price available
             let price = state.market.price()?;
-            info!("{price:?}");
+            // info!("{price:?}");
             let last_kline = state.market.last_kline;
-            info!("{last_kline:?}");
+            // info!("{last_kline:?}");
+
+            let klines = &state.market.klines;
+            info!("{klines:?}");
+            return None;
             // Generate Market order to buy the minimum allowed quantity
             Some(Order {
                 exchange: state.instrument.exchange,
