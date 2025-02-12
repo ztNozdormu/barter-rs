@@ -45,7 +45,7 @@ use fnv::FnvHashMap;
 use futures::StreamExt;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use tracing::debug;
+use tracing::{debug, info};
 
 const EXCHANGE: ExchangeId = ExchangeId::BinanceFuturesUsd;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
@@ -143,11 +143,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run dummy asynchronous AuditStream consumer
     // Note: you probably want to use this Stream to replicate EngineState, or persist events, etc.
     //  --> eg/ see examples/engine_with_replica_engine_state.rs
+    /**
+       * event examples---
+       * 2025-02-12T07:42:52.828873Z  INFO engine_with_live_market_data_and_strategy_execution: AuditStream consumed AuditTick audit=AuditTick { event: Process(Process(Account(Item(AccountEvent { exchange: ExchangeIndex(0), kind: Sn
+       * apshot(AccountSnapshot { exchange: ExchangeIndex(0), balances: [AssetBalance { asset: AssetIndex(0), balance: Balance { total: 0.1, free: 0.1 }, time_exchange: 2025-02-12T07:41:50.645351800Z }, AssetBalance { asset: AssetIn
+       * dex(1), balance: Balance { total: 0, free: 0 }, time_exchange: 2025-02-12T07:41:50.645351800Z }], instruments: [] }) })))), context: EngineContext { sequence: Sequence(1), time: 2025-02-12T07:42:52.827023300Z } }
+       * 2025-02-12T07:42:52.834185Z  INFO barter::engine: Engine actioning user Command::CancelOrders filter=None
+       * 2025-02-12T07:43:28.138053Z  INFO engine_with_live_market_data_and_strategy_execution: AuditStream consumed AuditTick audit=AuditTick { event: Process(ProcessWithOutput(TradingStateUpdate(Disabled), One(OnTradingDisabled(()
+       * )))), context: EngineContext { sequence: Sequence(2), time: 2025-02-12T07:42:52.834079600Z } }
+       * 2025-02-12T07:43:28.138729Z  INFO barter::engine: Engine actioning user Command::ClosePositions filter=None
+       * 2025-02-12T07:43:32.249377Z  INFO barter::engine: Engine shutting down shutdown_audit=Commanded(Shutdown)
+       * 2025-02-12T07:43:32.249015Z  INFO engine_with_live_market_data_and_strategy_execution: AuditStream consumed AuditTick audit=AuditTick { event: Process(ProcessWithOutput(Command(CancelOrders(None)), One(Commanded(CancelOrder
+       *  s(SendRequestsOutput { sent: None, errors: None }))))), context: EngineContext { sequence: Sequence(3), time: 2025-02-12T07:43:28.138703600Z } }
+       * 2025-02-12T07:43:33.171938Z  INFO engine_with_live_market_data_and_strategy_execution: AuditStream consumed AuditTick audit=AuditTick { event: Process(ProcessWithOutput(Command(ClosePositions(None)), One(Commanded(ClosePosi
+       * tions(SendCancelsAndOpensOutput { cancels: SendRequestsOutput { sent: None, errors: None }, opens: SendRequestsOutput { sent: None, errors: None } }))))), context: EngineContext { sequence: Sequence(4), time: 2025-02-12T07:
+       * 43:32.249344700Z } }
+       * 2025-02-12T07:43:42.256996Z  INFO engine_with_live_market_data_and_strategy_execution: AuditStream consumed AuditTick audit=AuditTick { event: Shutdown(Commanded(Shutdown)), context: EngineContext { sequence: Sequence(5), t
+       * ime: 2025-02-12T07:43:32.249353800Z } }
+       * 2025-02-12T07:43:42.261016Z  INFO engine_with_live_market_data_and_strategy_execution: AuditStream consumed AuditTick shutdown audit=AuditTick { event: Shutdown(Commanded(Shutdown)), context: EngineContext { sequence: Seque
+       * nce(5), time: 2025-02-12T07:43:32.249353800Z } }
+       *
+       *
+       */
+
     let audit_task = tokio::spawn(async move {
         let mut audit_stream = audit_rx.into_stream();
         while let Some(audit) = audit_stream.next().await {
-            debug!(?audit, "AuditStream consumed AuditTick");
+            info!(?audit, "AuditStream consumed AuditTick");
             if let EngineAudit::Shutdown(_) = audit.event {
+                info!(?audit, "AuditStream consumed AuditTick shutdown");
                 break;
             }
         }
@@ -157,13 +181,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Let the example run for 4 seconds..., then:
     tokio::time::sleep(std::time::Duration::from_secs(4)).await;
     // 1. Disable Strategy order generation (still continues to update EngineState)
-    // feed_tx.send(TradingState::Disabled)?;
+    feed_tx.send(TradingState::Disabled)?;
     // // 2. Cancel all open orders
-    // feed_tx.send(Command::CancelOrders(InstrumentFilter::None))?;
+    feed_tx.send(Command::CancelOrders(InstrumentFilter::None))?;
     // // 3. Send orders to close current positions
-    // feed_tx.send(Command::ClosePositions(InstrumentFilter::None))?;
+    feed_tx.send(Command::ClosePositions(InstrumentFilter::None))?;
     // 4. Stop Engine run loop
-    // feed_tx.send(EngineEvent::Shutdown)?;
+    feed_tx.send(EngineEvent::Shutdown)?;
     // feed_tx.send(EngineEvent::TradingStateUpdate(TradingState::Enabled))?;
     // Await Engine & AuditStream task graceful shutdown
     // Note: Engine & AuditStream returned, ready for further use
