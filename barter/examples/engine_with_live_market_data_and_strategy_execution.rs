@@ -189,6 +189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 4. Stop Engine run loop
     feed_tx.send(EngineEvent::Shutdown)?;
     // feed_tx.send(EngineEvent::TradingStateUpdate(TradingState::Enabled))?;
+
     // Await Engine & AuditStream task graceful shutdown
     // Note: Engine & AuditStream returned, ready for further use
     let (engine, _shutdown_audit) = engine_task.await?;
