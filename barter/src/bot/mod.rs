@@ -49,6 +49,7 @@ use fnv::FnvHashMap;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::fmt::Debug;
+use crate::engine::state::instrument::market_data::MarketDataState;
 
 const EXCHANGE: ExchangeId = ExchangeId::BinanceFuturesUsd;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
@@ -72,32 +73,48 @@ const STARTING_BALANCE_SOL: Balance = Balance {
 };
 
 /// 使用类型别名简化结构
-type MyEngineState = EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>;
+// type MyEngineState = EngineState<Market, Strategy, Risk>;
 
 /// Engine 类型别名
-type MyEngine<Clock, ExecutionTxs, Strategy, Risk> = Engine<Clock, MyEngineState, ExecutionTxs, Strategy, Risk>;
+// type MyEngine<Clock, ExecutionTxs, Strategy, Risk> = Engine<Clock, MyEngineState, ExecutionTxs, Strategy, Risk>;
 
 /// TradingRobot 类型定义
-pub struct TradingRobot<Clock, ExecutionTxs, Strategy, Risk> {
-    engine: MyEngine<Clock, ExecutionTxs, Strategy, Risk>,
+pub struct TradingRobot<Clock,Market, ExecutionTxs, Strategy, Risk> { // Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk
+    // engine: MyEngine<Clock, ExecutionTxs, Strategy, Risk>,
+    engine: Engine<Clock, EngineState<Market, Strategy, Risk>, ExecutionTxs, Strategy, Risk>,
     feed_tx: UnboundedTx<EngineEvent<DataKind>>,
     feed_rx: UnboundedRx<EngineEvent<DataKind>>,
-    audit_tx: UnboundedTx<AuditTick<EngineAudit<MyEngineState, EngineEvent<DataKind>, EngineOutput<(), ()>>, EngineContext>>,
-    audit_rx: UnboundedRx<AuditTick<EngineAudit<MyEngineState, EngineEvent<DataKind>, EngineOutput<(), ()>>, EngineContext>>,
+    audit_tx: UnboundedTx<AuditTick<EngineAudit<EngineState<Market, Strategy, Risk>, EngineEvent<DataKind>, EngineOutput<(), ()>>, EngineContext>>,
+    audit_rx: UnboundedRx<AuditTick<EngineAudit<EngineState<Market, Strategy, Risk>, EngineEvent<DataKind>, EngineOutput<(), ()>>, EngineContext>>,
     instruments: IndexedInstruments,
-    state: MyEngineState,
+    state: EngineState<Market, Strategy, Risk>,
 }
 
-impl<Clock, ExecutionTxs, Strategy, Risk> TradingRobot<Clock, ExecutionTxs, Strategy, Risk>
+impl<Clock,Market, ExecutionTxs, Strategy, Risk> TradingRobot<Clock,Market, ExecutionTxs, Strategy, Risk>
+// where
+//     Clock: EngineClock,
+//     // MarketState: MarketDataState,
+//     // StrategyState: for<'a> Processor<&'a AccountEvent> + for<'a> Processor<&'a MarketEvent>,
+//     // RiskState: for<'a> Processor<&'a AccountEvent> + for<'a> Processor<&'a MarketEvent>,
+//     ExecutionTxs: ExecutionTxMap<ExchangeIndex, InstrumentIndex>,
+//     Strategy: OnTradingDisabled<Clock, MyEngineState, ExecutionTxs, Risk> + OnDisconnectStrategy<Clock, MyEngineState, ExecutionTxs, Risk> + AlgoStrategy<State=MyEngineState> + ClosePositionsStrategy<State=MyEngineState>,
+//     Risk: RiskManager<State=MyEngineState>,
 where
     Clock: EngineClock,
-    // MarketState: MarketDataState,
-    // StrategyState: for<'a> Processor<&'a AccountEvent> + for<'a> Processor<&'a MarketEvent>,
-    // RiskState: for<'a> Processor<&'a AccountEvent> + for<'a> Processor<&'a MarketEvent>,
     ExecutionTxs: ExecutionTxMap<ExchangeIndex, InstrumentIndex>,
-    Strategy: OnTradingDisabled<Clock, MyEngineState, ExecutionTxs, Risk> + OnDisconnectStrategy<Clock, MyEngineState, ExecutionTxs, Risk> + AlgoStrategy<State=MyEngineState> + ClosePositionsStrategy<State=MyEngineState>,
-    Risk: RiskManager<State=MyEngineState>,
-{
+    Strategy: OnTradingDisabled<
+        Clock,
+        EngineState<MarketState, StrategyState, RiskState>,
+        ExecutionTxs,
+        Risk,
+    > + OnDisconnectStrategy<
+        Clock,
+        EngineState<MarketState, StrategyState, RiskState>,
+        ExecutionTxs,
+        Risk,
+    > + AlgoStrategy<State = EngineState<MarketState, StrategyState, RiskState>>
+    + ClosePositionsStrategy<State = EngineState<MarketState, StrategyState, RiskState>>,
+    Risk: RiskManager<State = EngineState<MarketState, StrategyState, RiskState>>,    {
     // 实现方法
 
 
@@ -186,8 +203,16 @@ where
             .await?;
         tokio::spawn(account_stream.forward_to(feed_tx.clone()));
 
+        // // Construct Engine
+        // let engine = Engine::new(
+        //     clock,
+        //     state.clone(),
+        //     execution_txs,
+        //     TrendStrategy::default(),
+        //     DefaultRiskManager::default(),
+        // );
         // Construct Engine
-        let engine = Engine::new(
+        let mut engine = Engine::new(
             clock,
             state.clone(),
             execution_txs,
