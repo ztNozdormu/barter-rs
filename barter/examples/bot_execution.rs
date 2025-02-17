@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let strategy = TrendStrategy::default();
     // let risk_manager = DefaultRiskManagerState::default();
 
-    let mut robot = TradingRobot::new();
+    let mut robot = TradingRobot::new().await?;
     robot.run().await?;
     Ok(())
 }

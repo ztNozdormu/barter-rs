@@ -74,7 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logging();
 
     // Initialise Channels
-    let (feed_tx,  feed_rx) = mpsc_unbounded();
+    let (feed_tx, mut feed_rx) = mpsc_unbounded();
     let (audit_tx, audit_rx) = mpsc_unbounded();
 
     // Construct IndexedInstruments

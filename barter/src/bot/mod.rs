@@ -120,15 +120,16 @@ impl TradingRobot {
             TrendStrategy::default(),
             DefaultRiskManager::default(),
         );
-
+        let shutdown_audit = run(&mut self.feed_rx, &mut engine, &mut ChannelTxDroppable::new(audit_tx));
+        let engine_task = (engine, shutdown_audit);
         // Start Engine and handle events
-        let feed_rx = Box::new(Arc::new(Mutex::new(&mut self.feed_rx)));  // 将 feed_rx 包装在 Arc 和 Mutex 中
+        // let feed_rx = Box::new(Arc::new(Mutex::new(&mut self.feed_rx)));  // 将 feed_rx 包装在 Arc 和 Mutex 中
 
         // let engine_task = tokio::task::spawn_blocking(move || {
         //     let shutdown_audit = run(&mut self.feed_rx, &mut engine, &mut ChannelTxDroppable::new(audit_tx));
         //     (engine, shutdown_audit)
         // });
-        //
+
         // let engine_task = tokio::task::spawn_blocking({
         //     let feed_rx = Arc::clone(&feed_rx);  // 克隆 Arc，以便传入闭包
         //     move || {
@@ -138,14 +139,13 @@ impl TradingRobot {
         //     }
         // });
 
-        //
-         let engine_task = tokio::task::spawn_blocking({
-             let feed_rx = feed_rx.clone(); // 克隆 Box
-             move || {
-                 let mut feed_rx = feed_rx.lock().unwrap();
-                 let shutdown_audit = run(&mut *feed_rx, &mut engine, &mut ChannelTxDroppable::new(audit_tx)); (engine, shutdown_audit)
-             }
-         });
+         // let engine_task = tokio::task::spawn_blocking({
+         //     let feed_rx = feed_rx.clone(); // 克隆 Box
+         //     move || {
+         //         let mut feed_rx = feed_rx.lock().unwrap();
+         //         let shutdown_audit = run(&mut *feed_rx, &mut engine, &mut ChannelTxDroppable::new(audit_tx)); (engine, shutdown_audit)
+         //     }
+         // });
         // let engine_task = tokio::task::spawn_blocking({
         //     let feed_rx = Arc::clone(&feed_rx);  // 克隆 Arc，以便传入闭包
         //     let audit_tx = audit_tx.clone();  // 如果 audit_tx 是可以克隆的，确保传递所有权
@@ -178,7 +178,7 @@ impl TradingRobot {
         // feed_tx.send(EngineEvent::Shutdown)?;
 
         // Wait for the tasks to finish gracefully
-        let (engine, _shutdown_audit) = engine_task.await?;
+        let (engine, _shutdown_audit) = engine_task; //engine_task.await?;
         let _audit_stream = audit_task.await?;
 
         Ok(())
