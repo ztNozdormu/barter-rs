@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logging();
 
     // Initialise Channels
-    let (feed_tx, mut feed_rx) = mpsc_unbounded();
+    let (feed_tx, mut _feed_rx) = mpsc_unbounded();
     let (audit_tx, audit_rx) = mpsc_unbounded();
 
     // Construct IndexedInstruments
@@ -158,7 +158,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run synchronous Engine on blocking task
     let engine_task = tokio::task::spawn_blocking(move || {
         let shutdown_audit = run(
-            &mut feed_rx,
+            &mut _feed_rx,
             &mut engine,
             &mut ChannelTxDroppable::new(audit_tx),
         );

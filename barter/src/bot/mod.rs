@@ -20,13 +20,10 @@ use crate::{engine::{
     Engine,
 }, execution::builder::ExecutionBuilder, logging::init_logging, risk::{DefaultRiskManager, DefaultRiskManagerState}, strategy::trend_strategy::{TrendStrategy, TrendStrategyState}, EngineEvent};
 use barter_data::event::{DataKind, MarketEvent};
-use barter_data::{
-    streams::{
-        builder::dynamic::indexed::init_indexed_multi_exchange_market_stream,
-        reconnect::stream::ReconnectingStream,
-    },
-    subscription::SubKind,
-};
+use barter_data::{event, streams::{
+    builder::dynamic::indexed::init_indexed_multi_exchange_market_stream,
+    reconnect::stream::ReconnectingStream,
+}, subscription::SubKind};
 use barter_execution::{balance::Balance, client::mock::MockExecutionConfig, AccountEvent};
 use barter_instrument::exchange::ExchangeIndex;
 use barter_instrument::instrument::InstrumentIndex;
@@ -49,10 +46,15 @@ use fnv::FnvHashMap;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
 use futures::StreamExt;
 use tracing::info;
+use crate::engine::audit::ProcessAudit::ProcessWithOutput;
+use crate::engine::command::Command;
+use crate::engine::state::instrument::filter::InstrumentFilter;
 use crate::engine::state::instrument::market_data::MarketDataState;
 use crate::execution::request::ExecutionRequest;
+use std::borrow::BorrowMut;
 
 const EXCHANGE: ExchangeId = ExchangeId::BinanceFuturesUsd;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
@@ -75,152 +77,39 @@ const STARTING_BALANCE_SOL: Balance = Balance {
     free: dec!(10.0),
 };
 
-
-// #[derive(Debug)]
-// pub struct TradingRobot<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk> {
-//     // engine: Engine<Clock, State, ExecutionTxs, Strategy, Risk>,
-//     engine: Engine<Clock,EngineState<MarketState, StrategyState, RiskState>,ExecutionTxs,Strategy,Risk>,
-//     feed_tx:  UnboundedTx<EngineEvent<DataKind>>,
-//     feed_rx:  UnboundedRx<EngineEvent<DataKind>>,
-//     audit_tx: UnboundedTx<AuditTick<EngineAudit<EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>, EngineEvent<DataKind>, EngineOutput<(), ()>>, EngineContext>>,
-//     audit_rx: UnboundedRx<AuditTick<EngineAudit<EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>, EngineEvent<DataKind>, EngineOutput<(), ()>>, EngineContext>>,
-//     instruments: IndexedInstruments,
-//     state: EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>,
-// }
-
-// impl<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk> TradingRobot<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk>
-// where
-//     Clock: EngineClock,// + for<'a> Processor<&'a EngineEvent<MarketState::EventKind>>,
-//     MarketState: MarketDataState,
-//     StrategyState: for<'a> Processor<&'a AccountEvent>
-//     + for<'a> Processor<&'a MarketEvent<InstrumentIndex, MarketState::EventKind>>,
-//     RiskState: for<'a> Processor<&'a AccountEvent>
-//     + for<'a> Processor<&'a MarketEvent<InstrumentIndex, MarketState::EventKind>>,
-//     ExecutionTxs: ExecutionTxMap<ExchangeIndex, InstrumentIndex>,
-//     Strategy: OnTradingDisabled<
-//         Clock,
-//         EngineState<MarketState, StrategyState, RiskState>,
-//         ExecutionTxs,
-//         Risk,
-//     > + OnDisconnectStrategy<
-//         Clock,
-//         EngineState<MarketState, StrategyState, RiskState>,
-//         ExecutionTxs,
-//         Risk,
-//     > + AlgoStrategy<State= EngineState<MarketState, StrategyState, RiskState>>
-//     + ClosePositionsStrategy<State= EngineState<MarketState, StrategyState, RiskState>>,
-//     Risk: RiskManager<State= EngineState<MarketState, StrategyState, RiskState>>,
-// {
-//
-
-/// 使用类型别名简化结构
-type MyEngineState = EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>;
-
-/// Engine 类型别名
-// type MyEngine<Clock, ExecutionTxs, Strategy, Risk> = Engine<Clock, MyEngineState, ExecutionTxs, Strategy, Risk>;
-
-/// TradingRobot 类型定义
+/// A basic structure representing a trading robot.
+#[derive(Debug)]
 pub struct TradingRobot {
-    // engine: Engine<LiveClock, MyEngineState, ExecutionTxs, Strategy, Risk>,
-    // engine: Engine<LiveClock, MyEngineState, MultiExchangeTxMap<UnboundedTx<ExecutionRequest>>, TrendStrategy.default(), DefaultRiskManager>,
     feed_tx: UnboundedTx<EngineEvent<DataKind>>,
-    feed_rx: UnboundedRx<EngineEvent<DataKind>>,
-    // audit_tx: UnboundedTx<AuditTick<EngineAudit<MyEngineState, EngineEvent<DataKind>, EngineOutput<(), ()>>, EngineContext>>,
-    // audit_rx: UnboundedRx<AuditTick<EngineAudit<MyEngineState, EngineEvent<DataKind>, EngineOutput<(), ()>>, EngineContext>>,
     instruments: IndexedInstruments,
-    // state: MyEngineState,
 }
 
 impl TradingRobot {
 
+    // Start the robot, running its core engine
+    pub async fn launch() -> Result<Self, Box<dyn std::error::Error>> {
 
-    // Initialize the TradingRobot with necessary components and configurations
-    pub async fn new() -> Result<Self, Box<dyn std::error::Error>>
-    {
         // Initialise Tracing
         init_logging();
-
-        // Initialise Channels
+        // Initialise data Channels
         let (feed_tx,mut feed_rx) = mpsc_unbounded();
-        // let (audit_tx, audit_rx) = mpsc_unbounded();
+
+        // Initialize event channels for communication
+        let (audit_tx, audit_rx) = mpsc_unbounded();
 
         // Construct IndexedInstruments
         let instruments = Self::indexed_instruments();
 
         // Initialise MarketData Stream & forward to Engine feed
         let market_stream =
-            init_indexed_multi_exchange_market_stream(&instruments, &[SubKind::KLines(1)]).await?;
+            init_indexed_multi_exchange_market_stream(&instruments, &[SubKind::KLines(1)]).await.expect("init_indexed_multi_exchange_market_stream error");
         tokio::spawn(market_stream.forward_to(feed_tx.clone()));
-
-        // Construct Engine clock
-        let clock = LiveClock;
-//
-//         // Construct EngineState from IndexedInstruments and hard-coded exchange asset Balances
-        let state = EngineState::<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>::builder(&instruments)
-            .time_engine_start(clock.time())
-            .trading_state(TradingState::Enabled)
-            .balances([
-              (EXCHANGE, "btc", STARTING_BALANCE_BTC),
-            // (EXCHANGE, "eth", STARTING_BALANCE_ETH),
-            // (EXCHANGE, "sol", STARTING_BALANCE_SOL),
-            // You can add more balances if needed.
-            ])
-            .build();
-
-        // Generate initial AccountSnapshot from EngineState for BinanceSpot MockExchange
-        // Note: for live-trading this would be automatically fetched via the AccountStream init
-        let mut initial_account = FnvHashMap::from(&state);
-        assert_eq!(initial_account.len(), 1);
-//
-        // Initialise ExecutionManager & forward Account Streams to Engine feed
-        let (execution_txs, account_stream) = ExecutionBuilder::new(&instruments)
-            .add_mock(MockExecutionConfig::new(
-                EXCHANGE,
-                initial_account.remove(&EXCHANGE).unwrap(),
-                MOCK_EXCHANGE_ROUND_TRIP_LATENCY_MS,
-                MOCK_EXCHANGE_FEES_PERCENT,
-            ))?
-            .init()
-            .await?;
-        tokio::spawn(account_stream.forward_to(feed_tx.clone()));
-
-        // Construct Engine
-        // let mut engine = Engine::new(
-        //     clock,
-        //     state.clone(),
-        //     execution_txs,
-        //     TrendStrategy::default(),
-        //     DefaultRiskManager::default(),
-        // );
-
-        Ok(TradingRobot {
-            // engine,
-            feed_tx,
-            feed_rx,
-            // audit_tx,
-            // audit_rx,
-            instruments,
-            // state,
-        })
-    }
-
-    // Start the robot, running its core engine
-    pub async fn start(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Initialize channels for communication
-        // let (feed_tx, mut feed_rx) = mpsc_unbounded();
-        let (audit_tx, audit_rx) = mpsc_unbounded();
-
-
-        // Initialise MarketData Stream & forward to Engine feed
-        let market_stream =
-            init_indexed_multi_exchange_market_stream(&self.instruments, &[SubKind::KLines(1)]).await?;
-        tokio::spawn(market_stream.forward_to(self.feed_tx.clone()));
 
         // Construct Engine clock
         let clock = LiveClock;
 
         // Construct EngineState from IndexedInstruments and hard-coded exchange asset Balances
-        let state = EngineState::<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>::builder(&self.instruments)
+        let state = EngineState::<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>::builder(&instruments)
             .time_engine_start(clock.time())
             .trading_state(TradingState::Enabled)
             .balances([
@@ -235,16 +124,16 @@ impl TradingRobot {
         assert_eq!(initial_account.len(), 1);
 
         // Initialise ExecutionManager & forward Account Streams to Engine feed
-        let (execution_txs, account_stream) = ExecutionBuilder::new(&self.instruments)
+        let (execution_txs, account_stream) = ExecutionBuilder::new(&instruments)
             .add_mock(MockExecutionConfig::new(
                 EXCHANGE,
                 initial_account.remove(&EXCHANGE).unwrap(),
                 MOCK_EXCHANGE_ROUND_TRIP_LATENCY_MS,
                 MOCK_EXCHANGE_FEES_PERCENT,
-            ))?
+            )).expect("execution builder error")
             .init()
-            .await?;
-        tokio::spawn(account_stream.forward_to(self.feed_tx.clone()));
+            .await.expect("execution builder error");
+        tokio::spawn(account_stream.forward_to(feed_tx.clone()));
 
         // Initialize Engine
         let mut engine = Engine::new(
@@ -256,59 +145,78 @@ impl TradingRobot {
         );
 
         // Start Engine and handle events
-        let shutdown_audit = run(&mut self.feed_rx, &mut engine, &mut ChannelTxDroppable::new(audit_tx));
-        let engine_task = (engine, shutdown_audit);
+        let engine_task = tokio::task::spawn_blocking(move || {
+            let shutdown_audit = run(
+                &mut feed_rx,
+                &mut engine,
+                &mut  ChannelTxDroppable::new(audit_tx),
+            );
+            (engine, shutdown_audit)
+        });
 
-        // Run dummy asynchronous AuditStream consumer
+        // Run dummy asynchronous AuditStream consumer TODO
         let audit_task = tokio::spawn(async move {
             let mut audit_stream = audit_rx.into_stream();
             while let Some(audit) = audit_stream.next().await {
                 info!(?audit, "AuditStream consumed AuditTick");
                 if let EngineAudit::Shutdown(_) = audit.event {
+                    // info!(?audit, "AuditStream consumed AuditTick shutdown");
+                    info!("AuditStream consumed AuditTick shutdown");
                     break;
                 }
+
+                if let EngineAudit::Process(_) = audit.event {
+                    // info!(?audit,"AuditStream consumed AuditTick ClosePositions");
+                    info!("AuditStream consumed AuditTick ClosePositions");
+                }
+
+                if let EngineAudit::Snapshot(state) = audit.event {
+                    // info!(?state,"AuditStream consumed AuditTick Snapshot State");
+                    info!("AuditStream consumed AuditTick Snapshot State");
+                }
             }
+            audit_stream
         });
 
         // Wait for the engine to perform tasks (e.g., sleep for a while)
-        tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+        // tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+        // let (feed_rx,_engine, _shutdown_audit) = engine_task.await?;
 
-        // Wait for the tasks to finish gracefully
-        let (engine, _shutdown_audit) = engine_task; //engine_task.await?;
-        let _audit_stream = audit_task.await?;
-
-        Ok(())
+        Ok(TradingRobot {
+            feed_tx,
+            instruments,
+        })
     }
-
 
 
     // Send a general command to the engine (cancel orders, close positions, etc.)
-    // pub fn send_command(&mut self, command: T) -> Result<(), Box<dyn std::error::Error>> {
-    //     self.feed_tx.send(command)?;
-    //     Ok(())
-    // }
-
-    // Shutdown the engine gracefully
-    pub async fn stop(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // self.send_command(EngineEvent::Shutdown)?;
+    pub async fn send_command<T>(&self, command: T) -> Result<(), Box<dyn std::error::Error>> where T: Debug + Clone + Send + Into<EngineEvent<DataKind>> {
+        self.feed_tx.send(command)?;
         Ok(())
     }
 
-    // Run dummy asynchronous AuditStream consumer
-    // Note: you probably want to use this Stream to replicate EngineState, or persist events, etc.
-    //  --> eg/ see examples/engine_with_replica_engine_state.rs
-    // pub fn start_audit_stream(&mut self) {
-    //     let mut audit_stream = self.audit_rx.into_stream();
-    //     tokio::spawn(async move {
-    //         while let Some(audit) = audit_stream.next().await {
-    //             info!(?audit, "AuditStream consumed AuditTick");
-    //             if let EngineAudit::Shutdown(_) = audit.event {
-    //                 info!(?audit, "AuditStream consumed AuditTick shutdown");
-    //                 break;
-    //             }
-    //         }
-    //     });
-    // }
+    // Shutdown the engine gracefully
+    pub async fn stop(&self) -> Result<(), Box<dyn std::error::Error>> {
+        self.send_command(EngineEvent::Shutdown).await?;
+        Ok(())
+    }
+
+    /// Disable Strategy order generation (still continues to update EngineState)
+    pub async fn disable(&self) -> Result<(), Box<dyn std::error::Error>> {
+        self.send_command(TradingState::Disabled).await?;
+        Ok(())
+    }
+    ///  Cancel all open orders
+    pub async fn cancel_orders(&self) -> Result<(), Box<dyn std::error::Error>> {
+        self.send_command(Command::CancelOrders(InstrumentFilter::None)).await?;
+        Ok(())
+    }
+    /// Send orders to close current positions
+    pub async fn close_position(&self) -> Result<(), Box<dyn std::error::Error>> {
+        self.send_command(Command::ClosePositions(InstrumentFilter::None)).await?;
+        Ok(())
+    }
+
 
     // Get indexed instruments
     fn indexed_instruments() -> IndexedInstruments {
