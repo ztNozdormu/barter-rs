@@ -340,3 +340,7 @@ THE ABOVE LIMITATIONS MAY NOT APPLY IN JURISDICTIONS THAT DO NOT ALLOW THE EXCLU
 
 ## learn doc
 https://mp.weixin.qq.com/s/LktWfKfSU5-CgjRFeTh9iw 算法交易系统掌握三大经典模式
+
+## source
+2025-02-24 sqlite-limbo
+https://github.com/tursodatabase/limbo/blob/main/bindings/rust/Cargo.toml
