@@ -29,6 +29,10 @@ pub mod position;
 /// Repositories for persisting Portfolio state.
 pub mod repository;
 
+/// Repositories for persisting Portfolio state.
+pub mod limbo;
+
+
 /// Logic for evaluating the risk associated with a proposed [`OrderEvent`].
 pub mod risk;
 
