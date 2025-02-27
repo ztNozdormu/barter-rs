@@ -1,8 +1,10 @@
 use barter::bot::TradingRobot;
 use barter_integration::channel::Tx;
 use std::sync::{Arc, OnceLock};
+use once_cell::sync::Lazy;
 use tokio::sync::{Mutex, OnceCell};
 use tracing::info;
+
 // pub static GLOBAL_ROBOT: Lazy<OnceCell<Arc<Mutex<TradingRobot>>>> = Lazy::new(|| OnceCell::new());
 
 // pub static GLOBAL_ROBOT: OnceLock<Arc<Mutex<TradingRobot>>> = OnceLock::new();
@@ -66,8 +68,8 @@ use tracing::info;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Get Global Robot
-    let robot = init_robot().await;
-    let robot2 = init_robot().await;
+    let robot = robot().await;
+    // let robot2 = init_robot().await;
     // 创建一个线程安全的 time 变量
     let time_arc = Arc::new(Mutex::new(5));
 
@@ -106,12 +108,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn init_robot() -> &'static TradingRobot {
-     static GLOBAL_ROBOT: OnceLock<TradingRobot> = OnceLock::new();
-    // TODO 这里需要修改
-    let robot = TradingRobot::launch().await.expect("Cannot launch TradingRobot");
-    GLOBAL_ROBOT.get_or_init(||{
+
+async fn robot() -> &'static TradingRobot {
+    static GLOBAL_ROBOT: Lazy<OnceCell<TradingRobot>> = Lazy::new(|| OnceCell::new());
+    GLOBAL_ROBOT.get_or_init(|| async {
+        let robot = TradingRobot::launch().await.expect("Cannot launch TradingRobot");
         info!("robot global initialized successfully");
         robot
-    })
+    }).await
 }

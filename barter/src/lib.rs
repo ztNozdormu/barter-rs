@@ -79,6 +79,9 @@ pub mod strategy;
 /// Barter bot
 pub mod bot;
 
+/// portfolio
+// pub mod portfolio;
+
 /// A timed value.
 #[derive(
     Debug,
