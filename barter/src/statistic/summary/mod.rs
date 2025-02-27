@@ -18,12 +18,25 @@ use chrono::{DateTime, TimeDelta, Utc};
 use derive_more::Constructor;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+// use crate::portfolio::position::Position;
 
 pub mod asset;
 pub mod dataset;
 pub mod display;
 pub mod instrument;
 pub mod pnl;
+
+// pub trait PositionSummariser: Copy
+// {
+//     fn update(&mut self, position: &Position);
+//     fn generate_summary(&mut self, positions: &[Position])
+//     {
+//         for position in positions.iter() {
+//             self.update(position)
+//         }
+//     }
+// }
+
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Constructor)]
 pub struct TradingSummary<Interval> {
