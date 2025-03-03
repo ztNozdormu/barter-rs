@@ -1,17 +1,17 @@
 use crate::{exchange::Connector, instrument::InstrumentData};
 use barter_instrument::{
+    Keyed,
     asset::name::AssetNameInternal,
     exchange::ExchangeId,
-    instrument::market_data::{kind::MarketDataInstrumentKind, MarketDataInstrument},
-    Keyed,
+    instrument::market_data::{MarketDataInstrument, kind::MarketDataInstrumentKind},
 };
 use barter_integration::{
-    error::SocketError, protocol::websocket::WsMessage, subscription::SubscriptionId, Validator,
+    Validator, error::SocketError, protocol::websocket::WsMessage, subscription::SubscriptionId,
 };
 use derive_more::Display;
 use fnv::FnvHashMap;
 use serde::{Deserialize, Serialize};
-use smol_str::{format_smolstr, ToSmolStr};
+use smol_str::{ToSmolStr, format_smolstr};
 use std::{borrow::Borrow, fmt::Debug, hash::Hash};
 
 /// OrderBook [`SubscriptionKind`]s and the associated Barter output data models.
@@ -56,8 +56,8 @@ pub fn display_subscriptions_without_exchange<Exchange, Instrument, Kind>(
     subscriptions: &[Subscription<Exchange, Instrument, Kind>],
 ) -> String
 where
-    Instrument: Display,
-    Kind: Display,
+    Instrument: std::fmt::Display,
+    Kind: std::fmt::Display,
 {
     subscriptions
         .iter()
@@ -74,9 +74,9 @@ where
 
 impl<Exchange, Instrument, Kind> std::fmt::Display for Subscription<Exchange, Instrument, Kind>
 where
-    Exchange: Display,
-    Instrument: Display,
-    Kind: Display,
+    Exchange: std::fmt::Display,
+    Instrument: std::fmt::Display,
+    Kind: std::fmt::Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}|{}|{})", self.exchange, self.kind, self.instrument)
@@ -487,7 +487,9 @@ mod tests {
                     }
                     (actual, expected) => {
                         // Test failed
-                        panic!("TC{index} failed because actual != expected. \nActual: {actual:?}\nExpected: {expected:?}\n");
+                        panic!(
+                            "TC{index} failed because actual != expected. \nActual: {actual:?}\nExpected: {expected:?}\n"
+                        );
                     }
                 }
             }
@@ -549,7 +551,9 @@ mod tests {
                     }
                     (actual, expected) => {
                         // Test failed
-                        panic!("TC{index} failed because actual != expected. \nActual: {actual:?}\nExpected: {expected:?}\n");
+                        panic!(
+                            "TC{index} failed because actual != expected. \nActual: {actual:?}\nExpected: {expected:?}\n"
+                        );
                     }
                 }
             }
@@ -603,7 +607,9 @@ mod tests {
                     }
                     (actual, expected) => {
                         // Test failed
-                        panic!("TC{index} failed because actual != expected. \nActual: {actual:?}\nExpected: {expected:?}\n");
+                        panic!(
+                            "TC{index} failed because actual != expected. \nActual: {actual:?}\nExpected: {expected:?}\n"
+                        );
                     }
                 }
             }

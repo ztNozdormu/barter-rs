@@ -1,15 +1,16 @@
 use crate::{
+    UnindexedAccountSnapshot,
     balance::AssetBalance,
     error::UnindexedOrderError,
     order::{
-        state::{Cancelled, Open},
-        Order, RequestCancel, RequestOpen,
+        Order,
+        request::{OrderRequestCancel, OrderRequestOpen, UnindexedOrderResponseCancel},
+        state::Open,
     },
     trade::Trade,
-    UnindexedAccountSnapshot,
 };
 use barter_instrument::{
-    asset::{name::AssetNameExchange, QuoteAsset},
+    asset::{QuoteAsset, name::AssetNameExchange},
     exchange::ExchangeId,
     instrument::name::InstrumentNameExchange,
 };
@@ -73,10 +74,8 @@ impl MockExchangeRequest {
 
     pub fn cancel_order(
         time_request: DateTime<Utc>,
-        response_tx: oneshot::Sender<
-            Order<ExchangeId, InstrumentNameExchange, Result<Cancelled, UnindexedOrderError>>,
-        >,
-        request: Order<ExchangeId, InstrumentNameExchange, RequestCancel>,
+        response_tx: oneshot::Sender<UnindexedOrderResponseCancel>,
+        request: OrderRequestCancel<ExchangeId, InstrumentNameExchange>,
     ) -> Self {
         Self::new(
             time_request,
@@ -92,7 +91,7 @@ impl MockExchangeRequest {
         response_tx: oneshot::Sender<
             Order<ExchangeId, InstrumentNameExchange, Result<Open, UnindexedOrderError>>,
         >,
-        request: Order<ExchangeId, InstrumentNameExchange, RequestOpen>,
+        request: OrderRequestOpen<ExchangeId, InstrumentNameExchange>,
     ) -> Self {
         Self::new(
             time_request,
@@ -120,15 +119,13 @@ pub enum MockExchangeRequestKind {
         time_since: DateTime<Utc>,
     },
     CancelOrder {
-        response_tx: oneshot::Sender<
-            Order<ExchangeId, InstrumentNameExchange, Result<Cancelled, UnindexedOrderError>>,
-        >,
-        request: Order<ExchangeId, InstrumentNameExchange, RequestCancel>,
+        response_tx: oneshot::Sender<UnindexedOrderResponseCancel>,
+        request: OrderRequestCancel<ExchangeId, InstrumentNameExchange>,
     },
     OpenOrder {
         response_tx: oneshot::Sender<
             Order<ExchangeId, InstrumentNameExchange, Result<Open, UnindexedOrderError>>,
         >,
-        request: Order<ExchangeId, InstrumentNameExchange, RequestOpen>,
+        request: OrderRequestOpen<ExchangeId, InstrumentNameExchange>,
     },
 }

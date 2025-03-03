@@ -19,8 +19,7 @@ use crate::{engine::{
     },
     Engine,
 }, execution::builder::ExecutionBuilder, logging::init_logging, risk::{DefaultRiskManager, DefaultRiskManagerState}, strategy::trend_strategy::{TrendStrategy, TrendStrategyState}, EngineEvent};
-use barter_data::event::{DataKind, MarketEvent};
-use barter_data::{event, streams::{
+use barter_data::{event::{DataKind, MarketEvent}, streams::{
     builder::dynamic::indexed::init_indexed_multi_exchange_market_stream,
     reconnect::stream::ReconnectingStream,
 }, subscription::SubKind};
@@ -55,6 +54,7 @@ use crate::engine::state::instrument::filter::InstrumentFilter;
 use crate::engine::state::instrument::market_data::MarketDataState;
 use crate::execution::request::ExecutionRequest;
 use std::borrow::BorrowMut;
+use barter_instrument::instrument::quote::InstrumentQuoteAsset;
 
 const EXCHANGE: ExchangeId = ExchangeId::BinanceFuturesUsd;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
@@ -226,7 +226,9 @@ impl TradingRobot {
                 "binance_perpetual_btc_usdt",
                 "BTCUSDT",
                 Underlying::new("btc", "usdt"),
+                InstrumentQuoteAsset::UnderlyingQuote,
                 InstrumentKind::Perpetual {
+                    contract_size: Default::default(),
                     settlement_asset: Asset::from("btc"),
                 },
                 Some(InstrumentSpec::new(
@@ -241,4 +243,5 @@ impl TradingRobot {
             ))
             .build()
     }
+
 }

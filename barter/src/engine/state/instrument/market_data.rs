@@ -2,18 +2,15 @@ use std::collections::VecDeque;
 use crate::{engine::Processor, Timed};
 use barter_data::{
     event::{DataKind, MarketEvent},
-    subscription::{
-        book::OrderBookL1,
-        kline::{KLine, KLines},
-    },
+    subscription::book::OrderBookL1,
 };
 use barter_instrument::instrument::InstrumentIndex;
-use barter_xchange::exchange::binance::model::Kline;
 use derive_more::Constructor;
 use rust_decimal::{prelude::FromPrimitive, Decimal};
-use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use rust_decimal_macros::dec;
+use barter_data::subscription::kline::KLine;
 
 /// Defines a state object for tracking and managing the market data state of an instrument.
 ///
@@ -74,7 +71,7 @@ impl<InstrumentKey> Processor<&MarketEvent<InstrumentKey, DataKind>> for Default
                 if self
                     .last_traded_price
                     .as_ref()
-                    .map_or(true, |price| price.time < event.time_exchange)
+                    .is_none_or(|price| price.time < event.time_exchange)
                 {
                     if let Some(price) = Decimal::from_f64(trade.price) {
                         self.last_traded_price

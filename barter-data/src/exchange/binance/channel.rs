@@ -1,14 +1,14 @@
-use super::{futures::BinanceFuturesUsd, Binance};
+use super::{Binance, futures::BinanceFuturesUsd};
 use crate::{
+    Identifier,
     subscription::{
+        Subscription,
         book::{OrderBooksL1, OrderBooksL2},
         kline::KLines,
         liquidation::Liquidations,
         ticker::Tickers,
         trade::PublicTrades,
-        Subscription,
     },
-    Identifier,
 };
 use serde::Serialize;
 use std::borrow::Cow;

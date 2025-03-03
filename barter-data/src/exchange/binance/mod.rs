@@ -7,11 +7,11 @@ use crate::{
         binance::futures::{kline::BinanceKline, ticker::BinanceTicker},
         Connector, ExchangeServer, ExchangeSub, StreamSelector,
     },
-    instrument::InstrumentData,
-    subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
-    subscription::{book::OrderBooksL1, kline::KLines, ticker::Tickers, trade::PublicTrades, Map},
-    transformer::stateless::StatelessTransformer,
     ExchangeWsStream, NoInitialSnapshots,
+    instrument::InstrumentData,
+    subscription::{book::OrderBooksL1, kline::KLines, ticker::Tickers, trade::PublicTrades, Map},
+    subscriber::{WebSocketSubscriber, validator::WebSocketSubValidator},
+    transformer::stateless::StatelessTransformer,
 };
 use barter_instrument::exchange::ExchangeId;
 use barter_integration::{error::SocketError, protocol::websocket::WsMessage};

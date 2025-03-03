@@ -1,8 +1,8 @@
 use crate::engine::Processor;
 use barter_data::event::MarketEvent;
 use barter_execution::{
-    order::{Order, RequestCancel, RequestOpen},
     AccountEvent,
+    order::request::{OrderRequestCancel, OrderRequestOpen},
 };
 use barter_instrument::{exchange::ExchangeIndex, instrument::InstrumentIndex};
 use barter_integration::Unrecoverable;
@@ -29,13 +29,13 @@ pub trait RiskManager<ExchangeKey = ExchangeIndex, InstrumentKey = InstrumentInd
     fn check(
         &self,
         state: &Self::State,
-        cancels: impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestCancel>>,
-        opens: impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestOpen>>,
+        cancels: impl IntoIterator<Item = OrderRequestCancel<ExchangeKey, InstrumentKey>>,
+        opens: impl IntoIterator<Item = OrderRequestOpen<ExchangeKey, InstrumentKey>>,
     ) -> (
-        impl IntoIterator<Item = RiskApproved<Order<ExchangeKey, InstrumentKey, RequestCancel>>>,
-        impl IntoIterator<Item = RiskApproved<Order<ExchangeKey, InstrumentKey, RequestOpen>>>,
-        impl IntoIterator<Item = RiskRefused<Order<ExchangeKey, InstrumentKey, RequestCancel>>>,
-        impl IntoIterator<Item = RiskRefused<Order<ExchangeKey, InstrumentKey, RequestOpen>>>,
+        impl IntoIterator<Item = RiskApproved<OrderRequestCancel<ExchangeKey, InstrumentKey>>>,
+        impl IntoIterator<Item = RiskApproved<OrderRequestOpen<ExchangeKey, InstrumentKey>>>,
+        impl IntoIterator<Item = RiskRefused<OrderRequestCancel<ExchangeKey, InstrumentKey>>>,
+        impl IntoIterator<Item = RiskRefused<OrderRequestOpen<ExchangeKey, InstrumentKey>>>,
     );
 }
 
@@ -112,13 +112,13 @@ impl<State, ExchangeKey, InstrumentKey> RiskManager<ExchangeKey, InstrumentKey>
     fn check(
         &self,
         _: &Self::State,
-        cancels: impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestCancel>>,
-        opens: impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestOpen>>,
+        cancels: impl IntoIterator<Item = OrderRequestCancel<ExchangeKey, InstrumentKey>>,
+        opens: impl IntoIterator<Item = OrderRequestOpen<ExchangeKey, InstrumentKey>>,
     ) -> (
-        impl IntoIterator<Item = RiskApproved<Order<ExchangeKey, InstrumentKey, RequestCancel>>>,
-        impl IntoIterator<Item = RiskApproved<Order<ExchangeKey, InstrumentKey, RequestOpen>>>,
-        impl IntoIterator<Item = RiskRefused<Order<ExchangeKey, InstrumentKey, RequestCancel>>>,
-        impl IntoIterator<Item = RiskRefused<Order<ExchangeKey, InstrumentKey, RequestOpen>>>,
+        impl IntoIterator<Item = RiskApproved<OrderRequestCancel<ExchangeKey, InstrumentKey>>>,
+        impl IntoIterator<Item = RiskApproved<OrderRequestOpen<ExchangeKey, InstrumentKey>>>,
+        impl IntoIterator<Item = RiskRefused<OrderRequestCancel<ExchangeKey, InstrumentKey>>>,
+        impl IntoIterator<Item = RiskRefused<OrderRequestOpen<ExchangeKey, InstrumentKey>>>,
     ) {
         (
             cancels.into_iter().map(RiskApproved::new),

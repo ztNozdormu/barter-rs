@@ -1,22 +1,20 @@
 use crate::engine::{
+    Processor,
     state::{
-        asset::{filter::AssetFilter, generate_empty_indexed_asset_states, AssetStates},
+        asset::{AssetStates, filter::AssetFilter, generate_empty_indexed_asset_states},
         builder::EngineStateBuilder,
-        connectivity::{generate_empty_indexed_connectivity_states, ConnectivityStates},
+        connectivity::{ConnectivityStates, generate_empty_indexed_connectivity_states},
         instrument::{
-            filter::InstrumentFilter, generate_empty_indexed_instrument_states,
+            InstrumentStates, filter::InstrumentFilter, generate_empty_indexed_instrument_states,
             generate_unindexed_instrument_account_snapshot, market_data::MarketDataState,
-            InstrumentStates,
         },
-        order::manager::OrderManager,
         position::PositionExited,
         trading::TradingState,
     },
-    Processor,
 };
 use barter_data::event::MarketEvent;
 use barter_execution::{
-    balance::AssetBalance, AccountEvent, AccountEventKind, UnindexedAccountSnapshot,
+    AccountEvent, AccountEventKind, UnindexedAccountSnapshot, balance::AssetBalance,
 };
 use barter_instrument::{
     asset::{AssetIndex, QuoteAsset},
@@ -134,9 +132,14 @@ impl<Market, Strategy, Risk> EngineState<Market, Strategy, Risk> {
             }
             AccountEventKind::OrderSnapshot(order) => {
                 self.instruments
-                    .instrument_index_mut(&order.0.instrument)
-                    .orders
+                    .instrument_index_mut(&order.0.key.instrument)
                     .update_from_order_snapshot(order.as_ref());
+                None
+            }
+            AccountEventKind::OrderCancelled(response) => {
+                self.instruments
+                    .instrument_index_mut(&response.key.instrument)
+                    .update_from_cancel_response(response);
                 None
             }
             AccountEventKind::Trade(trade) => self
@@ -205,7 +208,7 @@ impl<Market, Strategy, Risk> From<&EngineState<Market, Strategy, Risk>>
                         .map(AssetBalance::from)
                         .collect(),
                     instruments: instruments
-                        .filtered(&InstrumentFilter::Exchanges(OneOrMany::One(ExchangeIndex(
+                        .instruments(&InstrumentFilter::Exchanges(OneOrMany::One(ExchangeIndex(
                             index,
                         ))))
                         .map(|snapshot| {

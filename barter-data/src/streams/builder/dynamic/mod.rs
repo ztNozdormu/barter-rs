@@ -1,11 +1,12 @@
 use crate::{
+    Identifier,
     error::DataError,
     exchange::{
         binance::{futures::BinanceFuturesUsd, market::BinanceMarket, spot::BinanceSpot},
-        bitfinex::{market::BitfinexMarket, Bitfinex},
-        bitmex::{market::BitmexMarket, Bitmex},
+        bitfinex::{Bitfinex, market::BitfinexMarket},
+        bitmex::{Bitmex, market::BitmexMarket},
         bybit::{futures::BybitPerpetualsUsd, market::BybitMarket, spot::BybitSpot},
-        coinbase::{market::CoinbaseMarket, Coinbase},
+        coinbase::{Coinbase, market::CoinbaseMarket},
         gateio::{
             future::{GateioFuturesBtc, GateioFuturesUsd},
             market::GateioMarket,
@@ -13,42 +14,39 @@ use crate::{
             perpetual::{GateioPerpetualsBtc, GateioPerpetualsUsd},
             spot::GateioSpot,
         },
-        kraken::{market::KrakenMarket, Kraken},
-        okx::{market::OkxMarket, Okx},
+        kraken::{Kraken, market::KrakenMarket},
+        okx::{Okx, market::OkxMarket},
     },
     instrument::InstrumentData,
     streams::{
-        consumer::{init_market_stream, MarketStreamResult, STREAM_RECONNECTION_POLICY},
+        consumer::{MarketStreamResult, STREAM_RECONNECTION_POLICY, init_market_stream},
         reconnect::stream::ReconnectingStream,
     },
     subscription::{
+        SubKind, Subscription,
         book::{OrderBookEvent, OrderBookL1, OrderBooksL1},
         kline::{KLine, KLines},
         liquidation::{Liquidation, Liquidations},
         ticker::{Ticker, Tickers},
         trade::{PublicTrade, PublicTrades},
-        SubKind, Subscription,
     },
-    Identifier,
 };
 use barter_instrument::exchange::ExchangeId;
 use barter_integration::{
-    channel::{mpsc_unbounded, UnboundedRx, UnboundedTx},
-    error::SocketError,
     Validator,
+    channel::{UnboundedRx, UnboundedTx, mpsc_unbounded},
+    error::SocketError,
 };
 use fnv::FnvHashMap;
-use futures::{
-    stream::{select_all, SelectAll},
-    Stream,
-};
-use futures_util::{future::try_join_all, StreamExt};
+use futures::{Stream, stream::SelectAll};
+use futures_util::{StreamExt, future::try_join_all};
 use itertools::Itertools;
 use std::{
     fmt::{Debug, Display},
     io::Read,
     sync::Arc,
 };
+use futures_util::stream::select_all;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use vecmap::VecMap;
 

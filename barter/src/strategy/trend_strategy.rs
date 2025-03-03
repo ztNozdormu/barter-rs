@@ -21,7 +21,7 @@ use barter_data::event::MarketEvent;
 use barter_execution::{
     order::{
         id::{ClientOrderId, StrategyId},
-        Order, OrderKind, RequestCancel, RequestOpen, TimeInForce,
+        Order, OrderKind, TimeInForce,
     },
     AccountEvent,
 };
@@ -36,6 +36,17 @@ use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use tracing::info;
+use barter_execution::order::id::OrderId;
+use barter_execution::order::OrderKey;
+use barter_execution::order::request::{OrderRequestCancel, OrderRequestOpen, RequestCancel, RequestOpen};
+use barter_execution::trade::TradeId;
+use barter_integration::channel::UnboundedTx;
+use crate::engine::clock::HistoricalClock;
+use crate::engine::execution_tx::MultiExchangeTxMap;
+use crate::engine::state::instrument::market_data::DefaultMarketData;
+use crate::execution::request::ExecutionRequest;
+use crate::risk::DefaultRiskManager;
+use crate::strategy::DefaultStrategyState;
 
 /// Naive implementation of all strategy interfaces.
 ///
@@ -68,53 +79,73 @@ impl<State> AlgoStrategy for TrendStrategy<State> {
         &self,
         state: &Self::State,
     ) -> (
-        impl IntoIterator<Item = Order<ExchangeIndex, InstrumentIndex, RequestCancel>>,
-        impl IntoIterator<Item = Order<ExchangeIndex, InstrumentIndex, RequestOpen>>,
+        impl IntoIterator<Item = OrderRequestCancel<ExchangeIndex, InstrumentIndex>>,
+        impl IntoIterator<Item = OrderRequestOpen<ExchangeIndex, InstrumentIndex>>,
     ) {
-        let opens = state.instruments.instruments().filter_map(|state| {
-            // Don't open more if we have a Position already
-            if state.position.is_some() {
-                return None;
-            }
+        let opens = state
+            .instruments
+            .instruments(&InstrumentFilter::None)
+            .filter_map(|state| {
+                // Don't open more if we have a Position already
+                if state.position.current.is_some() {
+                    return None;
+                }
 
-            // Don't open more orders if there are already some InFlight
-            if !state.orders.0.is_empty() {
-                return None;
-            }
+                // Don't open more orders if there are already some InFlight
+                if !state.orders.0.is_empty() {
+                    return None;
+                }
 
-            // Don't open if there is no market data price available
-            let price = state.market.price()?;
-            // info!("{price:?}");
-            let last_kline = state.market.last_kline;
-            // info!("{last_kline:?}");
+                // Don't open if there is no market data price available
+                // let price = state.market.price()?;
 
-            let klines = &state.market.klines;
-            info!("{klines:?}");
-            return None;
-            // Generate Market order to buy the minimum allowed quantity
-            Some(Order {
-                exchange: state.instrument.exchange,
-                instrument: state.key,
-                strategy: self.id.clone(),
-                cid: gen_cid(state.key.index()),
-                side: Side::Buy,
-                state: RequestOpen {
-                    kind: OrderKind::Market,
-                    time_in_force: TimeInForce::ImmediateOrCancel,
-                    price,
-                    quantity: dec!(1),
-                },
-            })
-        });
+                // info!("{price:?}");
+                let last_kline = state.market.last_kline;
+                // info!("{last_kline:?}");
+                if state.market.closed {
+                    let klines = &state.market.klines;
+                    info!("{klines:?}");
+                }
+
+                // Generate Market order to buy the minimum allowed quantity
+                Some(OrderRequestOpen {
+                    key: OrderKey {
+                        exchange: state.instrument.exchange,
+                        instrument: state.key,
+                        strategy: self.id.clone(),
+                        cid: gen_cid(state.key.index()),
+                    },
+                    state: RequestOpen {
+                        side: Side::Buy,
+                        kind: OrderKind::Market,
+                        time_in_force: TimeInForce::ImmediateOrCancel,
+                        price,
+                        quantity: dec!(1),
+                    },
+                })
+            });
+
         (std::iter::empty(), opens)
     }
 }
 
-impl<MarketState, StrategyState, RiskState> ClosePositionsStrategy
-    for TrendStrategy<EngineState<MarketState, StrategyState, RiskState>>
-where
-    MarketState: MarketDataState,
-{
+fn strategy_id() -> StrategyId {
+    StrategyId::new("TrendStrategy")
+}
+
+fn gen_cid(instrument: usize) -> ClientOrderId {
+    ClientOrderId::new(InstrumentIndex(instrument).to_string())
+}
+
+fn gen_trade_id(instrument: usize) -> TradeId {
+    TradeId::new(InstrumentIndex(instrument).to_string())
+}
+
+fn gen_order_id(instrument: usize) -> OrderId {
+    OrderId::new(InstrumentIndex(instrument).to_string())
+}
+
+impl<MarketState, StrategyState, RiskState> ClosePositionsStrategy for TrendStrategy<EngineState<MarketState, StrategyState, RiskState>> {
     type State = EngineState<MarketState, StrategyState, RiskState>;
 
     fn close_positions_requests<'a>(
@@ -134,15 +165,33 @@ where
     }
 }
 
-impl<Clock, State, ExecutionTxs, Risk> OnDisconnectStrategy<Clock, State, ExecutionTxs, Risk>
-    for TrendStrategy<State>
+#[derive(Debug, PartialEq)]
+struct OnDisconnectOutput;
+impl<MarketState, StrategyState, RiskState>
+OnDisconnectStrategy<
+    HistoricalClock,
+    EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>,
+    MultiExchangeTxMap<UnboundedTx<ExecutionRequest>>,
+    DefaultRiskManager<
+        EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>,
+    >,
+> for TrendStrategy<EngineState<MarketState, StrategyState, RiskState>>
 {
-    type OnDisconnect = ();
+    type OnDisconnect = OnDisconnectOutput;
 
     fn on_disconnect(
-        _: &mut Engine<Clock, State, ExecutionTxs, Self, Risk>,
+        _: &mut Engine<
+            HistoricalClock,
+            EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>,
+            MultiExchangeTxMap<UnboundedTx<ExecutionRequest>>,
+            Self,
+            DefaultRiskManager<
+                EngineState<FeedMarketData, TrendStrategyState, DefaultRiskManagerState>,
+            >,
+        >,
         _: ExchangeId,
     ) -> Self::OnDisconnect {
+        OnDisconnectOutput
     }
 }
 
@@ -173,8 +222,4 @@ impl<ExchangeKey, AssetKey, InstrumentKey>
 impl<InstrumentKey, Kind> Processor<&MarketEvent<InstrumentKey, Kind>> for TrendStrategyState {
     type Audit = ();
     fn process(&mut self, _: &MarketEvent<InstrumentKey, Kind>) -> Self::Audit {}
-}
-
-fn gen_cid(instrument: usize) -> ClientOrderId {
-    ClientOrderId::new(InstrumentIndex(instrument).to_string())
 }

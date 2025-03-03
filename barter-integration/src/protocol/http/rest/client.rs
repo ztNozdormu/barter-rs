@@ -1,13 +1,11 @@
 use crate::{
     error::SocketError,
     metric::{Field, Metric, Tag},
-    protocol::http::{rest::RestRequest, BuildStrategy, HttpParser},
+    protocol::http::{BuildStrategy, HttpParser, rest::RestRequest},
 };
 use bytes::Bytes;
 use chrono::Utc;
-use reqwest::Response;
 use std::borrow::Cow;
-use tokio_tungstenite::tungstenite::http::status;
 
 /// Configurable REST client capable of executing signed [`RestRequest`]s. Use this when
 /// integrating APIs that require Http in order to interact with resources. Each API will require
@@ -36,7 +34,7 @@ pub struct RestClient<'a, Strategy, Parser> {
     pub parser: Parser,
 }
 
-impl<'a, Strategy, Parser> RestClient<'a, Strategy, Parser>
+impl<Strategy, Parser> RestClient<'_, Strategy, Parser>
 where
     Strategy: BuildStrategy,
     Parser: HttpParser,

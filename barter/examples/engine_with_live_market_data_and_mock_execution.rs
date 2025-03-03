@@ -1,22 +1,22 @@
 use barter::{
+    EngineEvent,
     engine::{
+        Engine,
         audit::EngineAudit,
         clock::{EngineClock, LiveClock},
         command::Command,
         run,
         state::{
+            EngineState,
             instrument::{filter::InstrumentFilter, market_data::DefaultMarketData},
             trading::TradingState,
-            EngineState,
         },
-        Engine,
     },
     execution::builder::ExecutionBuilder,
     logging::init_logging,
     risk::{DefaultRiskManager, DefaultRiskManagerState},
     statistic::time::Daily,
     strategy::{DefaultStrategy, DefaultStrategyState},
-    EngineEvent,
 };
 use barter_data::{
     streams::{
@@ -27,19 +27,18 @@ use barter_data::{
 };
 use barter_execution::{balance::Balance, client::mock::MockExecutionConfig};
 use barter_instrument::{
+    Underlying,
     exchange::ExchangeId,
     index::IndexedInstruments,
     instrument::{
-        kind::InstrumentKind,
+        Instrument,
         spec::{
             InstrumentSpec, InstrumentSpecNotional, InstrumentSpecPrice, InstrumentSpecQuantity,
             OrderQuantityUnits,
         },
-        Instrument,
     },
-    Underlying,
 };
-use barter_integration::channel::{mpsc_unbounded, ChannelTxDroppable, Tx};
+use barter_integration::channel::{ChannelTxDroppable, Tx, mpsc_unbounded};
 use fnv::FnvHashMap;
 use futures::StreamExt;
 use rust_decimal::Decimal;
@@ -186,12 +185,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn indexed_instruments() -> IndexedInstruments {
     IndexedInstruments::builder()
-        .add_instrument(Instrument::new(
+        .add_instrument(Instrument::spot(
             EXCHANGE,
             "binance_spot_btc_usdt",
             "BTCUSDT",
             Underlying::new("btc", "usdt"),
-            InstrumentKind::Spot,
             Some(InstrumentSpec::new(
                 InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
                 InstrumentSpecQuantity::new(
@@ -202,24 +200,22 @@ fn indexed_instruments() -> IndexedInstruments {
                 InstrumentSpecNotional::new(dec!(5.0)),
             )),
         ))
-        .add_instrument(Instrument::new(
+        .add_instrument(Instrument::spot(
             EXCHANGE,
             "binance_spot_eth_usdt",
             "ETHUSDT",
             Underlying::new("eth", "usdt"),
-            InstrumentKind::Spot,
             Some(InstrumentSpec::new(
                 InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
                 InstrumentSpecQuantity::new(OrderQuantityUnits::Quote, dec!(0.0001), dec!(0.0001)),
                 InstrumentSpecNotional::new(dec!(5.0)),
             )),
         ))
-        .add_instrument(Instrument::new(
+        .add_instrument(Instrument::spot(
             EXCHANGE,
             "binance_spot_sol_usdt",
             "SOLUSDT",
             Underlying::new("sol", "usdt"),
-            InstrumentKind::Spot,
             Some(InstrumentSpec::new(
                 InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
                 InstrumentSpecQuantity::new(OrderQuantityUnits::Quote, dec!(0.001), dec!(0.001)),

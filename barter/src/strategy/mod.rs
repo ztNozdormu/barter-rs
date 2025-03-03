@@ -1,22 +1,25 @@
 use crate::{
     engine::{
-        state::{
-            instrument::{filter::InstrumentFilter, market_data::MarketDataState},
-            EngineState,
-        },
         Engine, Processor,
+        state::{
+            EngineState,
+            instrument::{filter::InstrumentFilter, market_data::MarketDataState},
+        },
     },
     strategy::{
         algo::AlgoStrategy,
-        close_positions::{close_open_positions_with_market_orders, ClosePositionsStrategy},
+        close_positions::{ClosePositionsStrategy, close_open_positions_with_market_orders},
         on_disconnect::OnDisconnectStrategy,
         on_trading_disabled::OnTradingDisabled,
     },
 };
 use barter_data::event::MarketEvent;
 use barter_execution::{
-    order::{id::StrategyId, Order, RequestCancel, RequestOpen},
     AccountEvent,
+    order::{
+        id::StrategyId,
+        request::{OrderRequestCancel, OrderRequestOpen},
+    },
 };
 use barter_instrument::{
     asset::AssetIndex,
@@ -77,8 +80,8 @@ impl<State, ExchangeKey, InstrumentKey> AlgoStrategy<ExchangeKey, InstrumentKey>
         &self,
         _: &Self::State,
     ) -> (
-        impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestCancel>>,
-        impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestOpen>>,
+        impl IntoIterator<Item = OrderRequestCancel<ExchangeKey, InstrumentKey>>,
+        impl IntoIterator<Item = OrderRequestOpen<ExchangeKey, InstrumentKey>>,
     ) {
         (std::iter::empty(), std::iter::empty())
     }
@@ -96,8 +99,8 @@ where
         state: &'a Self::State,
         filter: &'a InstrumentFilter,
     ) -> (
-        impl IntoIterator<Item = Order<ExchangeIndex, InstrumentIndex, RequestCancel>> + 'a,
-        impl IntoIterator<Item = Order<ExchangeIndex, InstrumentIndex, RequestOpen>> + 'a,
+        impl IntoIterator<Item = OrderRequestCancel<ExchangeIndex, InstrumentIndex>> + 'a,
+        impl IntoIterator<Item = OrderRequestOpen<ExchangeIndex, InstrumentIndex>> + 'a,
     )
     where
         ExchangeIndex: 'a,

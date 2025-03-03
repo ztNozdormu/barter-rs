@@ -1,6 +1,6 @@
-use self::liquidation::BinanceLiquidation;
 use super::{Binance, ExchangeServer};
 use crate::{
+    ExchangeWsStream, NoInitialSnapshots,
     exchange::{
         binance::futures::{
             kline::BinanceKline,
@@ -9,15 +9,17 @@ use crate::{
                 BinanceFuturesUsdOrderBooksL2Transformer,
             },
         },
-        StreamSelector,
-    },
-    instrument::InstrumentData,
-    subscription::{book::OrderBooksL2, kline::KLines, liquidation::Liquidations},
-    transformer::stateless::StatelessTransformer,
-    ExchangeWsStream, NoInitialSnapshots,
+    }
 };
 use barter_instrument::exchange::ExchangeId;
 use std::fmt::{Display, Formatter};
+use crate::exchange::binance::futures::liquidation::BinanceLiquidation;
+use crate::exchange::StreamSelector;
+use crate::instrument::InstrumentData;
+use crate::subscription::book::OrderBooksL2;
+use crate::subscription::kline::KLines;
+use crate::subscription::liquidation::Liquidations;
+use crate::transformer::stateless::StatelessTransformer;
 
 /// Level 2 OrderBook types.
 pub mod l2;

@@ -1,7 +1,7 @@
 use barter::{
     engine::state::{
-        instrument::market_data::DefaultMarketData, position::PositionExited,
-        trading::TradingState, EngineState,
+        EngineState, instrument::market_data::DefaultMarketData, position::PositionExited,
+        trading::TradingState,
     },
     risk::DefaultRiskManagerState,
     statistic::{summary::TradingSummaryGenerator, time::Annual365},
@@ -12,11 +12,11 @@ use barter_execution::{
     trade::{AssetFees, TradeId},
 };
 use barter_instrument::{
+    Side, Underlying,
     asset::{AssetIndex, QuoteAsset},
     exchange::ExchangeId,
     index::IndexedInstruments,
-    instrument::{kind::InstrumentKind, Instrument, InstrumentIndex},
-    Side, Underlying,
+    instrument::{Instrument, InstrumentIndex},
 };
 use barter_integration::snapshot::Snapshot;
 use chrono::{DateTime, Days, Utc};
@@ -102,20 +102,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn indexed_instruments() -> IndexedInstruments {
     IndexedInstruments::builder()
-        .add_instrument(Instrument::new(
+        .add_instrument(Instrument::spot(
             ExchangeId::BinanceSpot,
             "binance_spot_btc_usdt",
             "BTCUSDT",
             Underlying::new("btc", "usdt"),
-            InstrumentKind::Spot,
             None,
         ))
-        .add_instrument(Instrument::new(
+        .add_instrument(Instrument::spot(
             ExchangeId::BinanceSpot,
             "binance_spot_eth_usdt",
             "ETHUSDT",
             Underlying::new("eth", "usdt"),
-            InstrumentKind::Spot,
             None,
         ))
         .build()
