@@ -1,11 +1,11 @@
-use crate::{engine::Processor, Timed};
+use crate::{Timed, engine::Processor};
 use barter_data::{
     event::{DataKind, MarketEvent},
     subscription::book::OrderBookL1,
 };
 use barter_instrument::instrument::InstrumentIndex;
 use derive_more::Constructor;
-use rust_decimal::{prelude::FromPrimitive, Decimal};
+use rust_decimal::{Decimal, prelude::FromPrimitive};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
@@ -68,7 +68,7 @@ impl<InstrumentKey> Processor<&MarketEvent<InstrumentKey, DataKind>> for Default
                 if self
                     .last_traded_price
                     .as_ref()
-                    .map_or(true, |price| price.time < event.time_exchange)
+                    .is_none_or(|price| price.time < event.time_exchange)
                 {
                     if let Some(price) = Decimal::from_f64(trade.price) {
                         self.last_traded_price

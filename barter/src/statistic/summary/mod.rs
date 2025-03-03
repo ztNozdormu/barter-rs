@@ -10,8 +10,8 @@ use crate::{
 };
 use barter_execution::balance::AssetBalance;
 use barter_instrument::{
-    asset::{name::AssetNameInternal, AssetIndex, ExchangeAsset},
-    instrument::{name::InstrumentNameInternal, InstrumentIndex},
+    asset::{AssetIndex, ExchangeAsset, name::AssetNameInternal},
+    instrument::{InstrumentIndex, name::InstrumentNameInternal},
 };
 use barter_integration::{collection::FnvIndexMap, snapshot::Snapshot};
 use chrono::{DateTime, TimeDelta, Utc};
@@ -96,7 +96,7 @@ impl TradingSummaryGenerator {
                 .map(|state| {
                     (
                         state.instrument.name_internal.clone(),
-                        state.statistics.clone(),
+                        state.tear_sheet.clone(),
                     )
                 })
                 .collect(),

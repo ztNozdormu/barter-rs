@@ -1,9 +1,9 @@
 use crate::{
-    asset::{name::AssetNameInternal, Asset, AssetIndex, ExchangeAsset},
+    Keyed,
+    asset::{Asset, AssetIndex, ExchangeAsset, name::AssetNameInternal},
     exchange::{ExchangeId, ExchangeIndex},
     index::{builder::IndexedInstrumentsBuilder, error::IndexError},
-    instrument::{name::InstrumentNameInternal, Instrument, InstrumentIndex},
-    Keyed,
+    instrument::{Instrument, InstrumentIndex, name::InstrumentNameInternal},
 };
 use serde::{Deserialize, Serialize};
 
@@ -205,11 +205,13 @@ mod tests {
     use super::*;
 
     use crate::{
+        Underlying,
         asset::Asset,
         exchange::ExchangeId,
-        instrument::{kind::InstrumentKind, name::InstrumentNameExchange},
+        instrument::{
+            kind::InstrumentKind, name::InstrumentNameExchange, quote::InstrumentQuoteAsset,
+        },
         test_utils::{exchange_asset, instrument},
-        Underlying,
     };
 
     #[test]
@@ -252,6 +254,7 @@ mod tests {
                     base: AssetIndex(0),
                     quote: AssetIndex(1),
                 },
+                quote: InstrumentQuoteAsset::UnderlyingQuote,
                 kind: InstrumentKind::Spot,
                 spec: None
             }
@@ -305,15 +308,21 @@ mod tests {
         let indexed = IndexedInstruments::new(instruments);
 
         // Test finding existing assets
-        assert!(indexed
-            .find_asset_index(ExchangeId::BinanceSpot, &AssetNameInternal::from("btc"))
-            .is_ok());
-        assert!(indexed
-            .find_asset_index(ExchangeId::BinanceSpot, &AssetNameInternal::from("usdt"))
-            .is_ok());
-        assert!(indexed
-            .find_asset_index(ExchangeId::Coinbase, &AssetNameInternal::from("eth"))
-            .is_ok());
+        assert!(
+            indexed
+                .find_asset_index(ExchangeId::BinanceSpot, &AssetNameInternal::from("btc"))
+                .is_ok()
+        );
+        assert!(
+            indexed
+                .find_asset_index(ExchangeId::BinanceSpot, &AssetNameInternal::from("usdt"))
+                .is_ok()
+        );
+        assert!(
+            indexed
+                .find_asset_index(ExchangeId::Coinbase, &AssetNameInternal::from("eth"))
+                .is_ok()
+        );
 
         // Test finding asset with wrong exchange
         let err = indexed
@@ -342,9 +351,11 @@ mod tests {
         let btc_usdt = InstrumentNameInternal::from("binance_spot-btc_usdt");
 
         // Test finding existing instruments
-        assert!(indexed
-            .find_instrument_index(ExchangeId::BinanceSpot, &btc_usdt)
-            .is_ok());
+        assert!(
+            indexed
+                .find_instrument_index(ExchangeId::BinanceSpot, &btc_usdt)
+                .is_ok()
+        );
 
         // Test finding instrument with wrong exchange
         let err = indexed
