@@ -73,10 +73,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建一个线程安全的 time 变量
     let time_arc = Arc::new(Mutex::new(5));
 
-    // loop {
-    //     let mut time = time_arc.lock().await;
-    //     *time += 1;
-    //     // info!(?time,"time 计数");
+    loop {
+        let mut time = time_arc.lock().await;
+        *time += 1;
+        // info!(?time,"time 计数");
     //     // Simulated send forbid generate trade order command
     //     if *time == 100 {
     //         // robot.disable().await?;
@@ -95,14 +95,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //         info!(?time,"time 计数;Liquidation command sent after time == 220");
     //     }
     //
-    //     //  Simulated sending robot stop command
-    //     // if *time == 1500 {
-    //     //     robot.stop().await?;
-    //     //     info!(?time,"time 计数;Robot stopped after time == 1500");
-    //     //     break;
-    //     // }
-    // }
-
+        //  Simulated sending robot stop command
+        if *time == 3500 {
+            robot.stop().await?;
+            info!(?time,"time 计数;Robot stopped after time == 3500");
+            break;
+        }
+    }
     println!("Server stopped");
 
     Ok(())

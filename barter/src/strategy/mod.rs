@@ -48,6 +48,7 @@ pub mod on_trading_disabled;
 pub mod trend_strategy;
 
 pub mod strategy_example;
+pub mod martin_strategy;
 
 /// Naive implementation of all strategy interfaces.
 ///
