@@ -47,6 +47,8 @@ pub mod on_trading_disabled;
 
 pub mod trend_strategy;
 
+pub mod strategy_example;
+
 /// Naive implementation of all strategy interfaces.
 ///
 /// *THIS IS FOR DEMONSTRATION PURPOSES ONLY, NEVER USE FOR REAL TRADING OR IN PRODUCTION*.
