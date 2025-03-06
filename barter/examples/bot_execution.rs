@@ -19,22 +19,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         *time += 1;
         // info!(?time,"time 计数");
         // Simulated send forbid generate trade order command
-        if *time == 100 {
-            // robot.disable().await?;
-            info!(?time,"time 计数;Trade order command is forbidden after time == 100");
-        }
-
-        // Simulate the cancel all/specify order command
-        if *time == 160 {
-            robot.cancel_orders().await?;
-            info!(?time,"time 计数;Orders have been canceled after time == 160");
-        }
-
-        // Simulate sending the liquidation command
-        if *time == 220  {
-            robot.close_position().await?;
-            info!(?time,"time 计数;Liquidation command sent after time == 220");
-        }
+        // if *time == 100 {
+        //     // robot.disable().await?;
+        //     info!(?time,"time 计数;Trade order command is forbidden after time == 100");
+        // }
+        //
+        // // Simulate the cancel all/specify order command
+        // if *time == 160 {
+        //     robot.cancel_orders().await?;
+        //     info!(?time,"time 计数;Orders have been canceled after time == 160");
+        // }
+        //
+        // // Simulate sending the liquidation command
+        // if *time == 220  {
+        //     robot.close_position().await?;
+        //     info!(?time,"time 计数;Liquidation command sent after time == 220");
+        // }
 
          // Simulated sending robot stop command
         // if *time == 3500 {
