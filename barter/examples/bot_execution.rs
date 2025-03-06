@@ -37,11 +37,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
          // Simulated sending robot stop command
-        if *time == 3500 {
-            robot.stop().await?;
-            info!(?time,"time 计数;Robot stopped after time == 3500");
-            break;
-        }
+        // if *time == 3500 {
+        //     robot.stop().await?;
+        //     info!(?time,"time 计数;Robot stopped after time == 3500");
+        //     break;
+        // }
     }
     println!("Server stopped");
 

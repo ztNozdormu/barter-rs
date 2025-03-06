@@ -1,5 +1,5 @@
 use crate::engine::audit::context::EngineContext;
-use crate::engine::audit::AuditTick;
+use crate::engine::audit::{AuditTick, ProcessAudit};
 use crate::engine::execution_tx::{ExecutionTxMap, MultiExchangeTxMap};
 use crate::engine::{run, EngineOutput, Processor};
 use crate::risk::RiskManager;
@@ -18,7 +18,7 @@ use crate::{engine::{
         EngineState,
     },
     Engine,
-}, execution::builder::ExecutionBuilder, logging::init_logging, risk::{DefaultRiskManager, DefaultRiskManagerState}, EngineEvent};
+}, execution::builder::ExecutionBuilder, logging::init_logging, risk::{DefaultRiskManager, DefaultRiskManagerState}, EngineEvent, Sequence};
 use barter_data::{event::{DataKind, MarketEvent}, streams::{
     builder::dynamic::indexed::init_indexed_multi_exchange_market_stream,
     reconnect::stream::ReconnectingStream,
@@ -48,36 +48,20 @@ use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 use futures::StreamExt;
 use tracing::info;
-use crate::engine::audit::ProcessAudit::ProcessWithOutput;
 use crate::engine::command::Command;
 use crate::engine::state::instrument::filter::InstrumentFilter;
 use crate::engine::state::instrument::market_data::MarketDataState;
 use crate::execution::request::ExecutionRequest;
 use std::borrow::BorrowMut;
 use barter_instrument::instrument::quote::InstrumentQuoteAsset;
+use barter_integration::collection::none_one_or_many::NoneOneOrMany;
+use barter_integration::collection::one_or_many::OneOrMany;
+use crate::engine::action::ActionOutput;
+use crate::engine::action::ActionOutput::CancelOrders;
+use crate::engine::action::send_requests::SendRequestsOutput;
+use crate::engine::EngineOutput::Commanded;
 use crate::strategy::DefaultStrategyState;
-use crate::strategy::martin_strategy::MartinStrategy;
-
-const EXCHANGE: ExchangeId = ExchangeId::BinanceFuturesUsd;
-const RISK_FREE_RETURN: Decimal = dec!(0.05);
-const MOCK_EXCHANGE_ROUND_TRIP_LATENCY_MS: u64 = 100;
-const MOCK_EXCHANGE_FEES_PERCENT: Decimal = dec!(0.05);
-const STARTING_BALANCE_USDT: Balance = Balance {
-    total: dec!(10_000.0),
-    free: dec!(10_000.0),
-};
-const STARTING_BALANCE_BTC: Balance = Balance {
-    total: dec!(0.1),
-    free: dec!(0.1),
-};
-const STARTING_BALANCE_ETH: Balance = Balance {
-    total: dec!(1.0),
-    free: dec!(1.0),
-};
-const STARTING_BALANCE_SOL: Balance = Balance {
-    total: dec!(10.0),
-    free: dec!(10.0),
-};
+use crate::strategy::martin_strategy::{MartinStrategy, OnDisconnectOutput, OnTradingDisabledOutput};
 
 /// A basic structure representing a trading robot.
 #[derive(Debug)]
@@ -93,6 +77,7 @@ impl TradingRobot {
 
         // Initialise Tracing
         init_logging();
+        // TODO global define
         let (execution_tx, mut execution_rx) = mpsc_unbounded();
         // Initialise data Channels
         let (feed_tx,mut feed_rx) = mpsc_unbounded();
@@ -124,22 +109,23 @@ impl TradingRobot {
         // Run dummy asynchronous AuditStream consumer TODO
         let _audit_task = tokio::spawn(async move {
             let mut audit_stream = audit_rx.into_stream();
+
             while let Some(audit) = audit_stream.next().await {
-                info!(?audit, "AuditStream consumed AuditTick");
-                if let EngineAudit::Shutdown(_) = audit.event {
-                    // info!(?audit, "AuditStream consumed AuditTick shutdown");
-                    info!("AuditStream consumed AuditTick shutdown");
-                    break;
-                }
 
-                if let EngineAudit::Process(_) = audit.event {
-                    // info!(?audit,"AuditStream consumed AuditTick ClosePositions");
-                    info!("AuditStream consumed AuditTick ClosePositions");
-                }
-
-                if let EngineAudit::Snapshot(state) = audit.event {
-                    // info!(?state,"AuditStream consumed AuditTick Snapshot State");
-                    info!("AuditStream consumed AuditTick Snapshot State");
+                match audit.event {
+                    EngineAudit::Snapshot(state) => {
+                        info!(?state, "AuditStream consumed AuditTick Snapshot");
+                    }
+                    EngineAudit::Process(ProcessAudit::Process(event)) => {
+                        info!(?event, "AuditStream consumed AuditTick Process no output");
+                    }
+                    EngineAudit::Process(ProcessAudit::ProcessWithOutput(event, output)) => {
+                        info!(?event, "AuditStream consumed AuditTick Process with output");
+                    }
+                    EngineAudit::Shutdown(_) => {
+                        info!(?audit, "AuditStream consumed AuditTick shutdown");
+                        break;
+                    }
                 }
             }
             audit_stream
@@ -179,7 +165,7 @@ impl TradingRobot {
                 .time_engine_start(crate::strategy::martin_strategy::STARTING_TIMESTAMP)
                 .trading_state(trading_state)
                 .balances([
-                    (ExchangeId::BinanceFuturesUsd, "usdt", STARTING_BALANCE_USDT),
+                    (ExchangeId::BinanceFuturesUsd, "usdt", crate::strategy::martin_strategy::STARTING_BALANCE_USDT),
                 ])
                 .build();
 

@@ -32,7 +32,7 @@ use rust_decimal_macros::dec;
 /// const info
 pub const STARTING_TIMESTAMP: DateTime<Utc> = DateTime::<Utc>::MIN_UTC;
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
-const STARTING_BALANCE_USDT: Balance = Balance {
+pub const STARTING_BALANCE_USDT: Balance = Balance {
     total: dec!(40_000.0),
     free: dec!(40_000.0),
 };
