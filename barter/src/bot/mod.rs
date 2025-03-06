@@ -101,7 +101,7 @@ impl TradingRobot {
         let (audit_tx, audit_rx) = mpsc_unbounded();
 
         // Construct IndexedInstruments
-        let instruments = Self::indexed_instruments();
+        let instruments = MartinStrategy::indexed_instruments();
 
         // Initialise MarketData Stream & forward to Engine feed
         let market_stream =
@@ -109,22 +109,10 @@ impl TradingRobot {
         tokio::spawn(market_stream.forward_to(feed_tx.clone()));
 
         // build engine
-        let mut engine = Self::build_engine(TradingState::Disabled, execution_tx);
+        let mut engine = Self::build_engine(TradingState::Disabled, instruments.clone(), execution_tx);
 
-        // Initialise ExecutionManager & forward Account Streams to Engine feed
-        // let (execution_txs, account_stream) = ExecutionBuilder::new(&instruments)
-        //     .add_mock(MockExecutionConfig::new(
-        //         EXCHANGE,
-        //         initial_account.remove(&EXCHANGE).unwrap(),
-        //         MOCK_EXCHANGE_ROUND_TRIP_LATENCY_MS,
-        //         MOCK_EXCHANGE_FEES_PERCENT,
-        //     )).expect("execution builder error")
-        //     .init()
-        //     .await.expect("execution builder error");
-        // tokio::spawn(account_stream.forward_to(feed_tx.clone()));
-
-        // Start Engine and handle events
-        let engine_task = tokio::task::spawn_blocking(move || {
+        // Start Engine and handle events feed_tx->feed_tx->run->（engine->audit_tx）->audit_rx->处理具体事件
+        let _engine_task = tokio::task::spawn_blocking(move || {
             let shutdown_audit = run(
                 &mut feed_rx,
                 &mut engine,
@@ -134,7 +122,7 @@ impl TradingRobot {
         });
 
         // Run dummy asynchronous AuditStream consumer TODO
-        let audit_task = tokio::spawn(async move {
+        let _audit_task = tokio::spawn(async move {
             let mut audit_stream = audit_rx.into_stream();
             while let Some(audit) = audit_stream.next().await {
                 info!(?audit, "AuditStream consumed AuditTick");
@@ -166,9 +154,11 @@ impl TradingRobot {
             instruments,
         })
     }
+
     /// build engine
     fn build_engine(
         trading_state: TradingState,
+        instruments: IndexedInstruments,
         execution_tx: UnboundedTx<ExecutionRequest>,
     ) -> Engine<
         LiveClock,
@@ -179,7 +169,6 @@ impl TradingRobot {
             EngineState<FeedMarketData, DefaultStrategyState, DefaultRiskManagerState>,
         >,
     > {
-        let instruments = MartinStrategy::indexed_instruments();
 
         let clock = LiveClock;
 
@@ -235,33 +224,6 @@ impl TradingRobot {
     pub async fn close_position(&self) -> Result<(), Box<dyn std::error::Error>> {
         self.send_command(Command::ClosePositions(InstrumentFilter::None)).await?;
         Ok(())
-    }
-
-
-    // Get indexed instruments
-    fn indexed_instruments() -> IndexedInstruments {
-        IndexedInstruments::builder()
-            .add_instrument(Instrument::new(
-                ExchangeId::BinanceFuturesUsd,
-                "binance_perpetual_btc_usdt",
-                "BTCUSDT",
-                Underlying::new("btc", "usdt"),
-                InstrumentQuoteAsset::UnderlyingQuote,
-                InstrumentKind::Perpetual {
-                    contract_size: Default::default(),
-                    settlement_asset: Asset::from("btc"),
-                },
-                Some(InstrumentSpec::new(
-                    InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
-                    InstrumentSpecQuantity::new(
-                        OrderQuantityUnits::Quote,
-                        dec!(0.00001),
-                        dec!(0.00001),
-                    ),
-                    InstrumentSpecNotional::new(dec!(5.0)),
-                )),
-            ))
-            .build()
     }
 
 }
