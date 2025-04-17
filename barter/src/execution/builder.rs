@@ -40,6 +40,8 @@ use tokio::{
     sync::{broadcast, mpsc},
     task::{JoinError, JoinHandle},
 };
+use barter_instrument::instrument::kind::future::FutureContract;
+use barter_instrument::instrument::kind::option::OptionContract;
 use barter_instrument::instrument::kind::perpetual::PerpetualContract;
 
 type ExecutionInitFuture =
@@ -417,11 +419,36 @@ fn generate_mock_exchange_instruments(
                     InstrumentKind::Spot => InstrumentKind::Spot,
                     InstrumentKind::Perpetual(contract) => InstrumentKind::Perpetual(PerpetualContract {
                         contract_size: contract.contract_size,
-                        settlement_asset: contract.settlement_asset,
+                        settlement_asset: instruments
+                            .find_asset(contract.settlement_asset)
+                            .unwrap()
+                            .asset
+                            .name_exchange
+                            .clone(),
                     }),
-                    unsupported => {
-                        panic!("MockExchange does not support: {unsupported:?}")
-                    }
+                    InstrumentKind::Future(contract) => InstrumentKind::Future(FutureContract {
+                        contract_size: contract.contract_size,
+                        settlement_asset: instruments
+                            .find_asset(contract.settlement_asset)
+                            .unwrap()
+                            .asset
+                            .name_exchange
+                            .clone(),
+                        expiry: contract.expiry,
+                    }),
+                    InstrumentKind::Option(contract) => InstrumentKind::Option(OptionContract {
+                        contract_size: contract.contract_size,
+                        settlement_asset: instruments
+                            .find_asset(contract.settlement_asset)
+                            .unwrap()
+                            .asset
+                            .name_exchange
+                            .clone(),
+                        kind: contract.kind,
+                        exercise: contract.exercise,
+                        expiry: contract.expiry,
+                        strike: contract.strike,
+                    }),
                 };
 
                 let spec = match spec {
