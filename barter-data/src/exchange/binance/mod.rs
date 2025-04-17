@@ -3,20 +3,18 @@ use self::{
     subscription::BinanceSubResponse, trade::BinanceTrade,
 };
 use crate::{
+    ExchangeWsStream, NoInitialSnapshots,
     exchange::{
         binance::futures::{kline::BinanceKline, ticker::BinanceTicker},
-        Connector, ExchangeServer, ExchangeSub, StreamSelector,
-    },
+        Connector, ExchangeServer, ExchangeSub, StreamSelector},
     instrument::InstrumentData,
-    subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
-    subscription::{book::OrderBooksL1, kline::KLines, ticker::Tickers, trade::PublicTrades, Map},
+    subscriber::{WebSocketSubscriber, validator::WebSocketSubValidator},
+    subscription::{Map, book::OrderBooksL1, trade::PublicTrades, kline::KLines, ticker::Tickers},
     transformer::stateless::StatelessTransformer,
-    ExchangeWsStream, NoInitialSnapshots,
 };
 use barter_instrument::exchange::ExchangeId;
 use barter_integration::{error::SocketError, protocol::websocket::WsMessage};
 use std::{fmt::Debug, marker::PhantomData};
-use tracing::info;
 use url::Url;
 
 /// OrderBook types common to both [`BinanceSpot`](spot::BinanceSpot) and
@@ -87,7 +85,7 @@ where
                 )
             })
             .collect::<Vec<String>>();
-        info!("{stream_names:?}");
+
         vec![WsMessage::text(
             serde_json::json!({
                 "method": "SUBSCRIBE",

@@ -1,40 +1,37 @@
 use crate::{
+    EngineEvent, Sequence,
     engine::{
         action::{
+            ActionOutput,
             cancel_orders::CancelOrders,
             close_positions::ClosePositions,
             generate_algo_orders::{GenerateAlgoOrders, GenerateAlgoOrdersOutput},
             send_requests::SendRequests,
-            ActionOutput,
         },
-        audit::{
-            context::EngineContext, shutdown::ShutdownAudit, AuditTick, Auditor, EngineAudit,
-            ProcessAudit,
-        },
+        audit::{AuditTick, Auditor, EngineAudit, ProcessAudit, context::EngineContext},
         clock::EngineClock,
         command::Command,
         execution_tx::ExecutionTxMap,
         state::{
-            instrument::market_data::MarketDataState,
+            EngineState, instrument::data::InstrumentDataState,
             order::in_flight_recorder::InFlightRequestRecorder, position::PositionExited,
-            trading::TradingState, EngineState,
+            trading::TradingState,
         },
     },
-    execution::AccountStreamEvent,
+    execution::{AccountStreamEvent, request::ExecutionRequest},
     risk::RiskManager,
+    shutdown::SyncShutdown,
     statistic::summary::TradingSummaryGenerator,
     strategy::{
         algo::AlgoStrategy, close_positions::ClosePositionsStrategy,
         on_disconnect::OnDisconnectStrategy, on_trading_disabled::OnTradingDisabled,
     },
-    EngineEvent, Sequence,
 };
 use barter_data::{event::MarketEvent, streams::consumer::MarketStreamEvent};
 use barter_execution::AccountEvent;
 use barter_instrument::{asset::QuoteAsset, exchange::ExchangeIndex, instrument::InstrumentIndex};
-use barter_integration::channel::{ChannelTxDroppable, Tx};
+use barter_integration::channel::Tx;
 use chrono::{DateTime, Utc};
-use derive_more::From;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -69,67 +66,15 @@ pub mod execution_tx;
 /// eg/ `ConnectivityStates`, `AssetStates`, `InstrumentStates`, `Position`, etc.
 pub mod state;
 
+/// `Engine` runners for processing input `Events`.
+///
+/// eg/ `fn sync_run`, `fn sync_run_with_audit`, `fn async_run`, `fn async_run_with_audit`,
+pub mod run;
+
 /// Defines how a component processing an input Event and generates an appropriate Audit.
 pub trait Processor<Event> {
     type Audit;
     fn process(&mut self, event: Event) -> Self::Audit;
-}
-
-/// Primary `Engine` entry point that processes input `Events` and forwards audits to the provided
-/// `AuditTx`.
-///
-/// Runs until shutdown, returning a [`ShutdownAudit`] detailing the reason for the shutdown
-/// (eg/ `Events` `FeedEnded`, `Command::Shutdown`, etc.).
-///
-/// # Arguments
-/// * `Events` - Iterator of events for the `Engine` to process.
-/// * `Engine` - Event processor that produces audit events as output.
-/// * `AuditTx` - Channel for sending produced audit events.
-pub fn run<Events, Engine, AuditTx>(
-    feed: &mut Events,
-    engine: &mut Engine,
-    audit_tx: &mut ChannelTxDroppable<AuditTx>,
-) -> ShutdownAudit<Events::Item, Engine::Output>
-where
-    Events: Iterator,
-    Events::Item: Debug + Clone,
-    Engine: Processor<Events::Item> + Auditor<Engine::Audit, Context = EngineContext>,
-    Engine::Audit: From<Engine::Snapshot> + From<ShutdownAudit<Events::Item, Engine::Output>>,
-    Engine::Output: Debug + Clone,
-    AuditTx: Tx<Item = AuditTick<Engine::Audit, EngineContext>>,
-    Option<ShutdownAudit<Events::Item, Engine::Output>>: for<'a> From<&'a Engine::Audit>,
-{
-    info!("Engine running");
-
-    // Send initial Engine State snapshot
-    audit_tx.send(engine.audit(engine.snapshot()));
-
-    // Run Engine process loop until shutdown
-    let shutdown_audit = loop {
-        let Some(event) = feed.next() else {
-            audit_tx.send(engine.audit(ShutdownAudit::FeedEnded));
-            break ShutdownAudit::FeedEnded;
-        };
-
-        // Process Event with AuditTick generation
-        let audit = process_with_audit(engine, event);
-
-        // Check if AuditTick indicates shutdown is required
-        let shutdown = Option::<ShutdownAudit<Events::Item, Engine::Output>>::from(&audit.event);
-
-        // Send AuditTick to AuditManager
-        audit_tx.send(audit);
-
-        if let Some(shutdown) = shutdown {
-            break shutdown;
-        }
-    };
-
-    // Send Shutdown audit
-    audit_tx.send(engine.audit(shutdown_audit.clone()));
-
-    info!(?shutdown_audit, "Engine shutting down");
-    shutdown_audit
 }
 
 /// Process and `Event` with the `Engine` and product an [`AuditTick`] of work done.
@@ -149,7 +94,7 @@ where
 ///
 /// The `Engine`:
 /// * Processes input [`EngineEvent`] (or custom events if implemented).
-/// * Maintains the internal [`EngineState`] (market data state, open orders, positions, etc.).
+/// * Maintains the internal [`EngineState`] (instrument data state, open orders, positions, etc.).
 /// * Generates algo orders (if `TradingState::Enabled`).
 ///
 /// # Type Parameters
@@ -177,48 +122,32 @@ pub struct EngineMeta {
     pub sequence: Sequence,
 }
 
-impl<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk>
-    Processor<EngineEvent<MarketState::EventKind>>
-    for Engine<
-        Clock,
-        EngineState<MarketState, StrategyState, RiskState>,
-        ExecutionTxs,
-        Strategy,
-        Risk,
-    >
+impl<Clock, GlobalData, InstrumentData, ExecutionTxs, Strategy, Risk>
+    Processor<EngineEvent<InstrumentData::MarketEventKind>>
+    for Engine<Clock, EngineState<GlobalData, InstrumentData>, ExecutionTxs, Strategy, Risk>
 where
-    Clock: EngineClock + for<'a> Processor<&'a EngineEvent<MarketState::EventKind>>,
-    MarketState: MarketDataState,
-    StrategyState: for<'a> Processor<&'a AccountEvent>
-        + for<'a> Processor<&'a MarketEvent<InstrumentIndex, MarketState::EventKind>>,
-    RiskState: for<'a> Processor<&'a AccountEvent>
-        + for<'a> Processor<&'a MarketEvent<InstrumentIndex, MarketState::EventKind>>,
+    Clock: EngineClock + for<'a> Processor<&'a EngineEvent<InstrumentData::MarketEventKind>>,
+    InstrumentData: InstrumentDataState,
+    GlobalData: for<'a> Processor<&'a AccountEvent>
+        + for<'a> Processor<&'a MarketEvent<InstrumentIndex, InstrumentData::MarketEventKind>>,
     ExecutionTxs: ExecutionTxMap<ExchangeIndex, InstrumentIndex>,
-    Strategy: OnTradingDisabled<
-            Clock,
-            EngineState<MarketState, StrategyState, RiskState>,
-            ExecutionTxs,
-            Risk,
-        > + OnDisconnectStrategy<
-            Clock,
-            EngineState<MarketState, StrategyState, RiskState>,
-            ExecutionTxs,
-            Risk,
-        > + AlgoStrategy<State = EngineState<MarketState, StrategyState, RiskState>>
-        + ClosePositionsStrategy<State = EngineState<MarketState, StrategyState, RiskState>>,
-    Risk: RiskManager<State = EngineState<MarketState, StrategyState, RiskState>>,
+    Strategy: OnTradingDisabled<Clock, EngineState<GlobalData, InstrumentData>, ExecutionTxs, Risk>
+        + OnDisconnectStrategy<Clock, EngineState<GlobalData, InstrumentData>, ExecutionTxs, Risk>
+        + AlgoStrategy<State = EngineState<GlobalData, InstrumentData>>
+        + ClosePositionsStrategy<State = EngineState<GlobalData, InstrumentData>>,
+    Risk: RiskManager<State = EngineState<GlobalData, InstrumentData>>,
 {
     type Audit = EngineAudit<
-        EngineState<MarketState, StrategyState, RiskState>,
-        EngineEvent<MarketState::EventKind>,
+        EngineState<GlobalData, InstrumentData>,
+        EngineEvent<InstrumentData::MarketEventKind>,
         EngineOutput<Strategy::OnTradingDisabled, Strategy::OnDisconnect>,
     >;
 
-    fn process(&mut self, event: EngineEvent<MarketState::EventKind>) -> Self::Audit {
+    fn process(&mut self, event: EngineEvent<InstrumentData::MarketEventKind>) -> Self::Audit {
         self.clock.process(&event);
 
         let process_audit = match &event {
-            EngineEvent::Shutdown => return EngineAudit::shutdown_commanded(event),
+            EngineEvent::Shutdown(_) => return EngineAudit::shutdown_commanded(event),
             EngineEvent::Command(command) => {
                 let output = self.action(command);
 
@@ -258,15 +187,29 @@ where
     }
 }
 
-impl<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk>
-    Engine<Clock, EngineState<MarketState, StrategyState, RiskState>, ExecutionTxs, Strategy, Risk>
+impl<Clock, GlobalData, InstrumentData, ExecutionTxs, Strategy, Risk> SyncShutdown
+    for Engine<Clock, EngineState<GlobalData, InstrumentData>, ExecutionTxs, Strategy, Risk>
+where
+    ExecutionTxs: ExecutionTxMap,
+{
+    type Result = ();
+
+    fn shutdown(&mut self) -> Self::Result {
+        self.execution_txs.iter().for_each(|execution_tx| {
+            let _send_result = execution_tx.send(ExecutionRequest::Shutdown);
+        });
+    }
+}
+
+impl<Clock, GlobalData, InstrumentData, ExecutionTxs, Strategy, Risk>
+    Engine<Clock, EngineState<GlobalData, InstrumentData>, ExecutionTxs, Strategy, Risk>
 {
     /// Action an `Engine` [`Command`], producing an [`ActionOutput`] of work done.
     pub fn action(&mut self, command: &Command) -> ActionOutput
     where
+        InstrumentData: InFlightRequestRecorder,
         ExecutionTxs: ExecutionTxMap,
-        Strategy:
-            ClosePositionsStrategy<State = EngineState<MarketState, StrategyState, RiskState>>,
+        Strategy: ClosePositionsStrategy<State = EngineState<GlobalData, InstrumentData>>,
         Risk: RiskManager,
     {
         match &command {
@@ -305,12 +248,8 @@ impl<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk>
         update: TradingState,
     ) -> Option<Strategy::OnTradingDisabled>
     where
-        Strategy: OnTradingDisabled<
-            Clock,
-            EngineState<MarketState, StrategyState, RiskState>,
-            ExecutionTxs,
-            Risk,
-        >,
+        Strategy:
+            OnTradingDisabled<Clock, EngineState<GlobalData, InstrumentData>, ExecutionTxs, Risk>,
     {
         self.state
             .trading
@@ -328,14 +267,9 @@ impl<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk>
         event: &AccountStreamEvent,
     ) -> UpdateFromAccountOutput<Strategy::OnDisconnect>
     where
-        StrategyState: for<'a> Processor<&'a AccountEvent>,
-        RiskState: for<'a> Processor<&'a AccountEvent>,
-        Strategy: OnDisconnectStrategy<
-            Clock,
-            EngineState<MarketState, StrategyState, RiskState>,
-            ExecutionTxs,
-            Risk,
-        >,
+        InstrumentData: for<'a> Processor<&'a AccountEvent>,
+        GlobalData: for<'a> Processor<&'a AccountEvent>,
+        Strategy: OnDisconnectStrategy<Clock, EngineState<GlobalData, InstrumentData>, ExecutionTxs, Risk>,
     {
         match event {
             AccountStreamEvent::Reconnecting(exchange) => {
@@ -359,18 +293,13 @@ impl<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk>
     /// the `Engine` will call the configured [`OnDisconnectStrategy`] strategy logic.
     pub fn update_from_market_stream(
         &mut self,
-        event: &MarketStreamEvent<InstrumentIndex, MarketState::EventKind>,
+        event: &MarketStreamEvent<InstrumentIndex, InstrumentData::MarketEventKind>,
     ) -> UpdateFromMarketOutput<Strategy::OnDisconnect>
     where
-        MarketState: MarketDataState,
-        StrategyState: for<'a> Processor<&'a MarketEvent<InstrumentIndex, MarketState::EventKind>>,
-        RiskState: for<'a> Processor<&'a MarketEvent<InstrumentIndex, MarketState::EventKind>>,
-        Strategy: OnDisconnectStrategy<
-            Clock,
-            EngineState<MarketState, StrategyState, RiskState>,
-            ExecutionTxs,
-            Risk,
-        >,
+        InstrumentData: InstrumentDataState,
+        GlobalData:
+            for<'a> Processor<&'a MarketEvent<InstrumentIndex, InstrumentData::MarketEventKind>>,
+        Strategy: OnDisconnectStrategy<Clock, EngineState<GlobalData, InstrumentData>, ExecutionTxs, Risk>,
     {
         match event {
             MarketStreamEvent::Reconnecting(exchange) => {
@@ -395,7 +324,7 @@ impl<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk>
         TradingSummaryGenerator::init(
             risk_free_return,
             self.meta.time_start,
-            self.clock.time(),
+            self.time(),
             &self.state.instruments,
             &self.state.assets,
         )

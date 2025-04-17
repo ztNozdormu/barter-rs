@@ -1,7 +1,9 @@
 use self::liquidation::BinanceLiquidation;
 use super::{Binance, ExchangeServer};
 use crate::{
+    ExchangeWsStream, NoInitialSnapshots,
     exchange::{
+        StreamSelector,
         binance::futures::{
             kline::BinanceKline,
             l2::{
@@ -9,12 +11,10 @@ use crate::{
                 BinanceFuturesUsdOrderBooksL2Transformer,
             },
         },
-        StreamSelector,
     },
     instrument::InstrumentData,
     subscription::{book::OrderBooksL2, kline::KLines, liquidation::Liquidations},
     transformer::stateless::StatelessTransformer,
-    ExchangeWsStream, NoInitialSnapshots,
 };
 use barter_instrument::exchange::ExchangeId;
 use std::fmt::{Display, Formatter};

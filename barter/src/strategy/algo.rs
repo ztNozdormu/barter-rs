@@ -1,4 +1,4 @@
-use barter_execution::order::{Order, RequestCancel, RequestOpen};
+use barter_execution::order::request::{OrderRequestCancel, OrderRequestOpen};
 use barter_instrument::{exchange::ExchangeIndex, instrument::InstrumentIndex};
 
 /// Strategy interface for generating algorithmic open and cancel order requests based on the
@@ -12,7 +12,7 @@ pub trait AlgoStrategy<ExchangeKey = ExchangeIndex, InstrumentKey = InstrumentIn
     ///
     /// For Barter ecosystem strategies, this is the full `EngineState` of the trading system.
     ///
-    /// eg/ `EngineState<DefaultMarketState, DefaultStrategyState, DefaultRiskManagerState>`
+    /// eg/ `EngineState<DefaultGlobalData, DefaultInstrumentMarketData>`
     type State;
 
     /// Generate algorithmic orders based on current system `State`.
@@ -20,7 +20,7 @@ pub trait AlgoStrategy<ExchangeKey = ExchangeIndex, InstrumentKey = InstrumentIn
         &self,
         state: &Self::State,
     ) -> (
-        impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestCancel>>,
-        impl IntoIterator<Item = Order<ExchangeKey, InstrumentKey, RequestOpen>>,
+        impl IntoIterator<Item = OrderRequestCancel<ExchangeKey, InstrumentKey>>,
+        impl IntoIterator<Item = OrderRequestOpen<ExchangeKey, InstrumentKey>>,
     );
 }

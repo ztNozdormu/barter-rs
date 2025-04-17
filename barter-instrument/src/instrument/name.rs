@@ -1,7 +1,7 @@
 use crate::{asset::name::AssetNameExchange, exchange::ExchangeId};
-use derive_more::{Display, From};
+use derive_more::Display;
 use serde::Serialize;
-use smol_str::{format_smolstr, SmolStr, StrExt};
+use smol_str::{SmolStr, StrExt, format_smolstr};
 use std::borrow::Borrow;
 
 /// Barter lowercase `SmolStr` representation for an [`Instrument`](super::Instrument) - unique
@@ -96,7 +96,7 @@ impl<'de> serde::de::Deserialize<'de> for InstrumentNameInternal {
     where
         D: serde::de::Deserializer<'de>,
     {
-        let name = <&str>::deserialize(deserializer)?;
+        let name = std::borrow::Cow::<'de, str>::deserialize(deserializer)?;
         Ok(InstrumentNameInternal::new(name))
     }
 }
@@ -160,7 +160,7 @@ impl<'de> serde::de::Deserialize<'de> for InstrumentNameExchange {
     where
         D: serde::de::Deserializer<'de>,
     {
-        let name = <&str>::deserialize(deserializer)?;
+        let name = std::borrow::Cow::<'de, str>::deserialize(deserializer)?;
         Ok(InstrumentNameExchange::new(name))
     }
 }

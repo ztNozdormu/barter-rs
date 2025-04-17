@@ -1,7 +1,7 @@
 [package]
 name = "barter"
-version = "0.9.1"
-edition = "2021"
+version = "0.12.0"
+edition = "2024"
 authors = ["JustAStream <justastream.code@gmail.com>"]
 license = "MIT"
 documentation = "https://docs.rs/barter"
@@ -11,9 +11,17 @@ description = "Framework for building high-performance live-trading, paper-tradi
 keywords = ["trading", "backtesting", "crypto", "stocks", "investment"]
 categories = ["accessibility", "simulation"]
 
+[[bench]]
+name = "backtest"
+path = "benches/backtest/mod.rs"
+harness = false
+
 [dev-dependencies]
+rust_decimal_macros = { workspace = true }
 serde_json = { workspace = true }
 spin_sleep = { workspace = true }
+tokio = { workspace = true, features = ["fs"]}
+criterion = { workspace = true }
 
 [dependencies]
 # Barter Ecosystem
@@ -50,6 +58,8 @@ chrono = { workspace = true, features = ["serde"]}
 derive_more = { workspace = true, features = ["constructor", "from", "display"]}
 prettytable-rs = "0.10.0"
 itertools = { workspace = true }
+parking_lot = { workspace = true }
+
 once_cell = "1.20.2"
 
 # Storage

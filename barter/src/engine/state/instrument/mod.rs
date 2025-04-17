@@ -1,27 +1,28 @@
 use crate::{
     engine::state::{
-        instrument::{filter::InstrumentFilter, market_data::MarketDataState},
-        order::{manager::OrderManager, Orders},
-        position::{Position, PositionExited},
+        instrument::{data::InstrumentDataState, filter::InstrumentFilter},
+        order::{Orders, manager::OrderManager},
+        position::{PositionExited, PositionManager},
     },
     statistic::summary::instrument::TearSheetGenerator,
 };
 use barter_data::event::MarketEvent;
 use barter_execution::{
+    InstrumentAccountSnapshot,
     order::{
+        Order, OrderKey,
+        request::OrderResponseCancel,
         state::{ActiveOrderState, OrderState},
-        Order,
     },
     trade::Trade,
-    InstrumentAccountSnapshot,
 };
 use barter_instrument::{
-    asset::{name::AssetNameExchange, AssetIndex, QuoteAsset},
+    asset::{AssetIndex, QuoteAsset, name::AssetNameExchange},
     exchange::{ExchangeId, ExchangeIndex},
     index::IndexedInstruments,
     instrument::{
-        name::{InstrumentNameExchange, InstrumentNameInternal},
         Instrument, InstrumentIndex,
+        name::{InstrumentNameExchange, InstrumentNameInternal},
     },
 };
 use barter_integration::{collection::FnvIndexMap, snapshot::Snapshot};
@@ -31,8 +32,9 @@ use itertools::Either;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-/// Defines the instrument-centric [`MarketDataState`] interface.
-pub mod market_data;
+/// Defines the state interface [`InstrumentDataState`] that can be implemented for custom
+/// instrument level data state.
+pub mod data;
 
 /// Defines an `InstrumentFilter`, used to filter instrument-centric data structures.
 pub mod filter;
@@ -43,22 +45,22 @@ pub mod filter;
 /// on different exchanges will have their own [`InstrumentState`].
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct InstrumentStates<
-    Market,
+    InstrumentData,
     ExchangeKey = ExchangeIndex,
     AssetKey = AssetIndex,
     InstrumentKey = InstrumentIndex,
 >(
     pub  FnvIndexMap<
         InstrumentNameInternal,
-        InstrumentState<Market, ExchangeKey, AssetKey, InstrumentKey>,
+        InstrumentState<InstrumentData, ExchangeKey, AssetKey, InstrumentKey>,
     >,
 );
 
-impl<Market> InstrumentStates<Market> {
+impl<InstrumentData> InstrumentStates<InstrumentData> {
     /// Return a reference to the `InstrumentState` associated with an `InstrumentIndex`.
     ///
     /// Panics if `InstrumentState` associated with the `InstrumentIndex` does not exist.
-    pub fn instrument_index(&self, key: &InstrumentIndex) -> &InstrumentState<Market> {
+    pub fn instrument_index(&self, key: &InstrumentIndex) -> &InstrumentState<InstrumentData> {
         self.0
             .get_index(key.index())
             .map(|(_key, state)| state)
@@ -68,7 +70,10 @@ impl<Market> InstrumentStates<Market> {
     /// Return a mutable reference to the `InstrumentState` associated with an `InstrumentIndex`.
     ///
     /// Panics if `InstrumentState` associated with the `InstrumentIndex` does not exist.
-    pub fn instrument_index_mut(&mut self, key: &InstrumentIndex) -> &mut InstrumentState<Market> {
+    pub fn instrument_index_mut(
+        &mut self,
+        key: &InstrumentIndex,
+    ) -> &mut InstrumentState<InstrumentData> {
         self.0
             .get_index_mut(key.index())
             .map(|(_key, state)| state)
@@ -78,7 +83,7 @@ impl<Market> InstrumentStates<Market> {
     /// Return a reference to the `InstrumentState` associated with an `InstrumentNameInternal`.
     ///
     /// Panics if `InstrumentState` associated with the `InstrumentNameInternal` does not exist.
-    pub fn instrument(&self, key: &InstrumentNameInternal) -> &InstrumentState<Market> {
+    pub fn instrument(&self, key: &InstrumentNameInternal) -> &InstrumentState<InstrumentData> {
         self.0
             .get(key)
             .unwrap_or_else(|| panic!("InstrumentStates does not contain: {key}"))
@@ -88,52 +93,158 @@ impl<Market> InstrumentStates<Market> {
     /// `InstrumentNameInternal`.
     ///
     /// Panics if `InstrumentState` associated with the `InstrumentNameInternal` does not exist.
-    pub fn instrument_mut(&mut self, key: &InstrumentNameInternal) -> &mut InstrumentState<Market> {
+    pub fn instrument_mut(
+        &mut self,
+        key: &InstrumentNameInternal,
+    ) -> &mut InstrumentState<InstrumentData> {
         self.0
             .get_mut(key)
             .unwrap_or_else(|| panic!("InstrumentStates does not contain: {key}"))
     }
 
-    /// Return a filtered `Iterator` of `InstrumentState`s based on the provided `InstrumentFilter`.
-    pub fn filtered<'a>(
+    /// Return an `Iterator` of references to `InstrumentState`s being tracked, optionally filtered
+    /// by the provided `InstrumentFilter`.
+    pub fn instruments<'a>(
         &'a self,
-        filter: &'a InstrumentFilter<ExchangeIndex, AssetIndex, InstrumentIndex>,
-    ) -> impl Iterator<Item = &'a InstrumentState<Market>>
+        filter: &'a InstrumentFilter,
+    ) -> impl Iterator<Item = &'a InstrumentState<InstrumentData>> {
+        self.filtered(filter)
+    }
+
+    /// Return an `Iterator` of mutable references to `InstrumentState`s being tracked, optionally
+    /// filtered by the provided `InstrumentFilter`.
+    pub fn instruments_mut<'a>(
+        &'a mut self,
+        filter: &'a InstrumentFilter,
+    ) -> impl Iterator<Item = &'a mut InstrumentState<InstrumentData>> {
+        self.filtered_mut(filter)
+    }
+
+    /// Return an `Iterator` of references to instrument `TearSheetGenerator`s, optionally
+    /// filtered by the provided `InstrumentFilter`.
+    pub fn tear_sheets<'a>(
+        &'a self,
+        filter: &'a InstrumentFilter,
+    ) -> impl Iterator<Item = &'a TearSheetGenerator>
     where
-        Market: 'a,
+        InstrumentData: 'a,
+    {
+        self.filtered(filter).map(|state| &state.tear_sheet)
+    }
+
+    /// Return an `Iterator` of references to instrument `PositionManager`s, optionally
+    /// filtered by the provided `InstrumentFilter`.
+    pub fn positions<'a>(
+        &'a self,
+        filter: &'a InstrumentFilter,
+    ) -> impl Iterator<Item = &'a PositionManager>
+    where
+        InstrumentData: 'a,
+    {
+        self.filtered(filter).map(|state| &state.position)
+    }
+
+    /// Return an `Iterator` of references to instrument `Orders`, optionally filtered by the
+    /// provided `InstrumentFilter`.
+    pub fn orders<'a>(&'a self, filter: &'a InstrumentFilter) -> impl Iterator<Item = &'a Orders>
+    where
+        InstrumentData: 'a,
+    {
+        self.filtered(filter).map(|state| &state.orders)
+    }
+
+    /// Return an `Iterator` of references to custom instrument level data state, optionally
+    /// filtered by the provided `InstrumentFilter`.
+    pub fn instrument_datas<'a>(
+        &'a self,
+        filter: &'a InstrumentFilter,
+    ) -> impl Iterator<Item = &'a InstrumentData>
+    where
+        InstrumentData: 'a,
+    {
+        self.filtered(filter).map(|state| &state.data)
+    }
+
+    /// Return an `Iterator` of mutable references to custom instrument level data state,
+    /// optionally filtered by the provided `InstrumentFilter`.
+    pub fn instrument_datas_mut<'a>(
+        &'a mut self,
+        filter: &'a InstrumentFilter,
+    ) -> impl Iterator<Item = &'a mut InstrumentData>
+    where
+        InstrumentData: 'a,
+    {
+        self.filtered_mut(filter).map(|state| &mut state.data)
+    }
+
+    /// Return a filtered `Iterator` of `InstrumentState`s based on the provided `InstrumentFilter`.
+    fn filtered<'a>(
+        &'a self,
+        filter: &'a InstrumentFilter,
+    ) -> impl Iterator<Item = &'a InstrumentState<InstrumentData>>
+    where
+        InstrumentData: 'a,
     {
         use filter::InstrumentFilter::*;
         match filter {
-            None => Either::Left(Either::Left(self.instruments())),
+            None => Either::Left(Either::Left(self.0.values())),
             Exchanges(exchanges) => Either::Left(Either::Right(
-                self.instruments()
+                self.0
+                    .values()
                     .filter(|state| exchanges.contains(&state.instrument.exchange)),
             )),
             Instruments(instruments) => Either::Right(Either::Right(
-                self.instruments()
+                self.0
+                    .values()
                     .filter(|state| instruments.contains(&state.key)),
             )),
             Underlyings(underlying) => Either::Right(Either::Left(
-                self.instruments()
+                self.0
+                    .values()
                     .filter(|state| underlying.contains(&state.instrument.underlying)),
             )),
         }
     }
 
-    /// Return an `Iterator` of all `InstrumentState`s being tracked.
-    pub fn instruments(&self) -> impl Iterator<Item = &InstrumentState<Market>> {
-        self.0.values()
+    /// Return a filtered `Iterator` of mutable `InstrumentState`s based on the
+    /// provided `InstrumentFilter`.
+    fn filtered_mut<'a>(
+        &'a mut self,
+        filter: &'a InstrumentFilter,
+    ) -> impl Iterator<Item = &'a mut InstrumentState<InstrumentData>>
+    where
+        InstrumentData: 'a,
+    {
+        use filter::InstrumentFilter::*;
+        match filter {
+            None => Either::Left(Either::Left(self.0.values_mut())),
+            Exchanges(exchanges) => Either::Left(Either::Right(
+                self.0
+                    .values_mut()
+                    .filter(|state| exchanges.contains(&state.instrument.exchange)),
+            )),
+            Instruments(instruments) => Either::Right(Either::Right(
+                self.0
+                    .values_mut()
+                    .filter(|state| instruments.contains(&state.key)),
+            )),
+            Underlyings(underlying) => Either::Right(Either::Left(
+                self.0
+                    .values_mut()
+                    .filter(|state| underlying.contains(&state.instrument.underlying)),
+            )),
+        }
     }
 }
 
 /// Represents the current state of an instrument, including its [`Position`], [`Orders`], and
-/// user provided market data state.
+/// user provided instrument data.
 ///
-/// This aggregates all the critical trading state for a single instrument, providing a complete
-/// view of its current trading status and market conditions.
+/// This aggregates all the state and data for a single instrument, providing a comprehensive
+/// view of the instrument.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Constructor)]
 pub struct InstrumentState<
-    Market,
+    InstrumentData,
     ExchangeKey = ExchangeIndex,
     AssetKey = AssetIndex,
     InstrumentKey = InstrumentIndex,
@@ -145,20 +256,21 @@ pub struct InstrumentState<
     pub instrument: Instrument<ExchangeKey, AssetKey>,
 
     /// TearSheet generator for summarising the trading performance associated with an Instrument.
-    pub statistics: TearSheetGenerator,
+    pub tear_sheet: TearSheetGenerator,
 
-    /// Current open position.
-    pub position: Option<Position<QuoteAsset, InstrumentKey>>,
+    /// Current `PositionManager`.
+    pub position: PositionManager<InstrumentKey>,
 
     /// Active orders and associated order management.
     pub orders: Orders<ExchangeKey, InstrumentKey>,
 
-    /// User provided market data state associated with this instrument.
-    pub market: Market,
+    /// User provided instrument level data state. This can include market data, strategy data,
+    /// risk data, option pricing data, or any other instrument-specific information.
+    pub data: InstrumentData,
 }
 
-impl<Market, ExchangeKey, AssetKey, InstrumentKey>
-    InstrumentState<Market, ExchangeKey, AssetKey, InstrumentKey>
+impl<InstrumentData, ExchangeKey, AssetKey, InstrumentKey>
+    InstrumentState<InstrumentData, ExchangeKey, AssetKey, InstrumentKey>
 {
     /// Updates the instrument state using an account snapshot from the exchange.
     ///
@@ -173,16 +285,40 @@ impl<Market, ExchangeKey, AssetKey, InstrumentKey>
         AssetKey: Debug + Clone,
     {
         for order in &snapshot.orders {
-            self.orders.update_from_order_snapshot(Snapshot(order))
+            self.update_from_order_snapshot(Snapshot(order))
         }
     }
 
-    /// Updates the instrument's position state based on a new trade.
+    /// Updates the instrument state from an [`Order`] snapshot.
+    pub fn update_from_order_snapshot(
+        &mut self,
+        order: Snapshot<&Order<ExchangeKey, InstrumentKey, OrderState<AssetKey, InstrumentKey>>>,
+    ) where
+        ExchangeKey: Debug + Clone,
+        AssetKey: Debug + Clone,
+        InstrumentKey: Debug + Clone,
+    {
+        self.orders.update_from_order_snapshot(order);
+    }
+
+    /// Updates the instrument state from an
+    /// [`OrderRequestCancel`](barter_execution::order::request::OrderRequestCancel) response.
+    pub fn update_from_cancel_response(
+        &mut self,
+        response: &OrderResponseCancel<ExchangeKey, AssetKey, InstrumentKey>,
+    ) where
+        ExchangeKey: Debug + Clone,
+        AssetKey: Debug + Clone,
+        InstrumentKey: Debug + Clone,
+    {
+        self.orders
+            .update_from_cancel_response::<AssetKey>(response);
+    }
+
+    /// Updates the instrument state based on a new trade.
     ///
     /// This method handles:
-    /// - Opening a new position if none exists
-    /// - Updating an existing position (increase/decrease/close)
-    /// - Handling position flips (close existing & open new with any remaining trade quantity)
+    /// - Opening/updating the current position state based on a new trade.
     /// - Updating the internal [`TearSheetGenerator`] if a position is exited.
     pub fn update_from_trade(
         &mut self,
@@ -191,43 +327,28 @@ impl<Market, ExchangeKey, AssetKey, InstrumentKey>
     where
         InstrumentKey: Debug + Clone + PartialEq,
     {
-        let (current, closed) = match self.position.take() {
-            Some(position) => {
-                // Update current Position, maybe closing it, and maybe opening a new Position
-                // with leftover trade.quantity
-                position.update_from_trade(trade)
-            }
-            None => {
-                // No current Position, so enter a new one with Trade
-                (Some(Position::from(trade)), None)
-            }
-        };
-
-        // Update Instrument TearSheet statistics
-        if let Some(position_exit) = &closed {
-            self.statistics.update_from_position(position_exit);
-        }
-
-        self.position = current;
-
-        closed
+        self.position
+            .update_from_trade(trade)
+            .inspect(|closed| self.tear_sheet.update_from_position(closed))
     }
 
-    /// Updates the instrument's market data state from a new market event.
+    /// Updates the instrument state based on a new market event.
     ///
     /// If the market event has a price associated with it (eg/ `PublicTrade`, `OrderBookL1`), any
     /// open [`Position`] `pnl_unrealised` is re-calculated.
-    pub fn update_from_market(&mut self, event: &MarketEvent<InstrumentKey, Market::EventKind>)
-    where
-        Market: MarketDataState<InstrumentKey>,
+    pub fn update_from_market(
+        &mut self,
+        event: &MarketEvent<InstrumentKey, InstrumentData::MarketEventKind>,
+    ) where
+        InstrumentData: InstrumentDataState<ExchangeKey, AssetKey, InstrumentKey>,
     {
-        self.market.process(event);
+        self.data.process(event);
 
-        let Some(position) = &mut self.position else {
+        let Some(position) = &mut self.position.current else {
             return;
         };
 
-        let Some(price) = self.market.price() else {
+        let Some(price) = self.data.price() else {
             return;
         };
 
@@ -236,13 +357,13 @@ impl<Market, ExchangeKey, AssetKey, InstrumentKey>
 }
 
 pub fn generate_unindexed_instrument_account_snapshot<
-    Market,
+    InstrumentData,
     ExchangeKey,
     AssetKey,
     InstrumentKey,
 >(
     exchange: ExchangeId,
-    state: &InstrumentState<Market, ExchangeKey, AssetKey, InstrumentKey>,
+    state: &InstrumentState<InstrumentData, ExchangeKey, AssetKey, InstrumentKey>,
 ) -> InstrumentAccountSnapshot<ExchangeId, AssetNameExchange, InstrumentNameExchange>
 where
     ExchangeKey: Debug + Clone,
@@ -251,10 +372,10 @@ where
     let InstrumentState {
         key: _,
         instrument,
-        statistics: _,
+        tear_sheet: _,
         position: _,
         orders,
-        market: _,
+        data: _,
     } = state;
 
     InstrumentAccountSnapshot {
@@ -263,11 +384,12 @@ where
             .orders()
             .filter_map(|order| {
                 let Order {
-                    exchange: _,
-                    instrument: _,
-                    strategy,
-                    cid,
+                    key,
                     side,
+                    price,
+                    quantity,
+                    kind,
+                    time_in_force,
                     state: ActiveOrderState::Open(open),
                 } = order
                 else {
@@ -275,11 +397,17 @@ where
                 };
 
                 Some(Order {
-                    exchange,
-                    instrument: instrument.name_exchange.clone(),
-                    strategy: strategy.clone(),
-                    cid: cid.clone(),
+                    key: OrderKey {
+                        exchange,
+                        instrument: instrument.name_exchange.clone(),
+                        strategy: key.strategy.clone(),
+                        cid: key.cid.clone(),
+                    },
                     side: *side,
+                    price: *price,
+                    quantity: *quantity,
+                    kind: *kind,
+                    time_in_force: *time_in_force,
                     state: OrderState::active(open.clone()),
                 })
             })
@@ -287,13 +415,18 @@ where
     }
 }
 
-/// Generates an indexed [`InstrumentStates`] containing default instrument state data.
-pub fn generate_empty_indexed_instrument_states<Market>(
+/// Generates an indexed [`InstrumentStates`]. Uses default values for
+pub fn generate_indexed_instrument_states<FnPosMan, FnOrders, FnInsData, InstrumentData>(
     instruments: &IndexedInstruments,
     time_engine_start: DateTime<Utc>,
-) -> InstrumentStates<Market, ExchangeIndex, AssetIndex, InstrumentIndex>
+    position_manager_init: FnPosMan,
+    orders_init: FnOrders,
+    mut instrument_data_init: FnInsData,
+) -> InstrumentStates<InstrumentData>
 where
-    Market: Default,
+    FnPosMan: Fn() -> PositionManager,
+    FnOrders: Fn() -> Orders,
+    FnInsData: FnMut() -> InstrumentData,
 {
     InstrumentStates(
         instruments
@@ -301,15 +434,16 @@ where
             .iter()
             .map(|instrument| {
                 let exchange_index = instrument.value.exchange.key;
+
                 (
                     instrument.value.name_internal.clone(),
                     InstrumentState::new(
                         instrument.key,
                         instrument.value.clone().map_exchange_key(exchange_index),
                         TearSheetGenerator::init(time_engine_start),
-                        None,
-                        Orders::default(),
-                        Market::default(),
+                        position_manager_init(),
+                        orders_init(),
+                        instrument_data_init(),
                     ),
                 )
             })

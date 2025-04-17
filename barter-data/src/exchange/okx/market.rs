@@ -1,18 +1,18 @@
 use super::Okx;
-use crate::{instrument::MarketInstrumentData, subscription::Subscription, Identifier};
+use crate::{Identifier, instrument::MarketInstrumentData, subscription::Subscription};
 use barter_instrument::{
+    Keyed,
     instrument::{
         kind::option::OptionKind,
-        market_data::{kind::MarketDataInstrumentKind::*, MarketDataInstrument},
+        market_data::{MarketDataInstrument, kind::MarketDataInstrumentKind::*},
     },
-    Keyed,
 };
 use chrono::{
-    format::{DelayedFormat, StrftimeItems},
     DateTime, Utc,
+    format::{DelayedFormat, StrftimeItems},
 };
 use serde::{Deserialize, Serialize};
-use smol_str::{format_smolstr, SmolStr, StrExt};
+use smol_str::{SmolStr, StrExt, format_smolstr};
 
 /// Type that defines how to translate a Barter [`Subscription`] into a
 /// [`Okx`] market that can be subscribed to.
@@ -54,14 +54,14 @@ fn okx_market(instrument: &MarketDataInstrument) -> OkxMarket {
 
     OkxMarket(match kind {
         Spot => format_smolstr!("{base}-{quote}").to_uppercase_smolstr(),
-        Future(future) => format_smolstr!("{base}-{quote}-{}", format_expiry(future.expiry))
+        Future(contract) => format_smolstr!("{base}-{quote}-{}", format_expiry(contract.expiry))
             .to_uppercase_smolstr(),
         Perpetual => format_smolstr!("{base}-{quote}-SWAP").to_uppercase_smolstr(),
-        Option(option) => format_smolstr!(
+        Option(contract) => format_smolstr!(
             "{base}-{quote}-{}-{}-{}",
-            format_expiry(option.expiry),
-            option.strike,
-            match option.kind {
+            format_expiry(contract.expiry),
+            contract.strike,
+            match contract.kind {
                 OptionKind::Call => "C",
                 OptionKind::Put => "P",
             },

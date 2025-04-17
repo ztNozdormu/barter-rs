@@ -1,14 +1,14 @@
 use crate::{
+    EngineEvent,
     engine::{
+        Engine, EngineOutput, UpdateFromAccountOutput, UpdateFromMarketOutput,
         action::ActionOutput,
         audit::{context::EngineContext, shutdown::ShutdownAudit},
         clock::EngineClock,
         error::UnrecoverableEngineError,
-        state::{instrument::market_data::MarketDataState, EngineState},
-        Engine, EngineOutput, UpdateFromAccountOutput, UpdateFromMarketOutput,
+        state::{EngineState, instrument::data::InstrumentDataState},
     },
     strategy::{on_disconnect::OnDisconnectStrategy, on_trading_disabled::OnTradingDisabled},
-    EngineEvent,
 };
 use barter_integration::collection::one_or_many::OneOrMany;
 use derive_more::Constructor;
@@ -27,15 +27,14 @@ pub mod state_replica;
 
 /// Convenient type alias for the default `Engine` `AuditTick`.
 pub type DefaultAuditTick<
-    MarketState: MarketDataState,
-    StrategyState,
-    RiskState,
+    GlobalData,
+    InstrumentData: InstrumentDataState,
     OnTradingDisabled,
     OnDisconnect,
 > = AuditTick<
     EngineAudit<
-        EngineState<MarketState, StrategyState, RiskState>,
-        EngineEvent<MarketState::EventKind>,
+        EngineState<GlobalData, InstrumentData>,
+        EngineEvent<InstrumentData::MarketEventKind>,
         EngineOutput<OnTradingDisabled, OnDisconnect>,
     >,
     EngineContext,
@@ -274,10 +273,10 @@ impl<Event, Output> ProcessAudit<Event, Output> {
     }
 }
 
-impl<Market, Strategy, Risk, Event, Output> From<EngineState<Market, Strategy, Risk>>
-    for EngineAudit<EngineState<Market, Strategy, Risk>, Event, Output>
+impl<GlobalData, InstrumentData, Event, Output> From<EngineState<GlobalData, InstrumentData>>
+    for EngineAudit<EngineState<GlobalData, InstrumentData>, Event, Output>
 {
-    fn from(value: EngineState<Market, Strategy, Risk>) -> Self {
+    fn from(value: EngineState<GlobalData, InstrumentData>) -> Self {
         Self::Snapshot(value)
     }
 }

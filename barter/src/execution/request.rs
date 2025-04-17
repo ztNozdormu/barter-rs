@@ -1,4 +1,4 @@
-use barter_execution::order::{Order, RequestCancel, RequestOpen};
+use barter_execution::order::request::{OrderRequestCancel, OrderRequestOpen};
 use barter_instrument::{exchange::ExchangeIndex, instrument::InstrumentIndex};
 use derive_more::From;
 use serde::{Deserialize, Serialize};
@@ -11,11 +11,14 @@ use std::{
 /// Represents an `Engine` request to the `ExecutionManager`.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize, Serialize, From)]
 pub enum ExecutionRequest<ExchangeKey = ExchangeIndex, InstrumentKey = InstrumentIndex> {
+    /// Request `ExecutionManager` shutdown.
+    Shutdown,
+
     /// Request to cancel an existing `Order`.
-    Cancel(Order<ExchangeKey, InstrumentKey, RequestCancel>),
+    Cancel(OrderRequestCancel<ExchangeKey, InstrumentKey>),
 
     /// Request to open an new `Order`.
-    Open(Order<ExchangeKey, InstrumentKey, RequestOpen>),
+    Open(OrderRequestOpen<ExchangeKey, InstrumentKey>),
 }
 
 #[derive(Debug)]

@@ -1,14 +1,14 @@
 use crate::engine::{
+    Engine,
     action::send_requests::{SendRequests, SendRequestsOutput},
     execution_tx::ExecutionTxMap,
     state::{
+        EngineState,
         instrument::filter::InstrumentFilter,
         order::{in_flight_recorder::InFlightRequestRecorder, manager::OrderManager},
-        EngineState,
     },
-    Engine,
 };
-use barter_execution::order::{Order, RequestCancel};
+use barter_execution::order::{Order, request::RequestCancel};
 use barter_instrument::{asset::AssetIndex, exchange::ExchangeIndex, instrument::InstrumentIndex};
 
 /// Trait that defines how the [`Engine`] cancels open order requests.
@@ -29,29 +29,24 @@ pub trait CancelOrders<
     fn cancel_orders(
         &mut self,
         filter: &InstrumentFilter<ExchangeKey, AssetKey, InstrumentKey>,
-    ) -> SendRequestsOutput<ExchangeKey, InstrumentKey, RequestCancel>;
+    ) -> SendRequestsOutput<RequestCancel, ExchangeKey, InstrumentKey>;
 }
 
-impl<Clock, MarketState, StrategyState, RiskState, ExecutionTxs, Strategy, Risk> CancelOrders
-    for Engine<
-        Clock,
-        EngineState<MarketState, StrategyState, RiskState>,
-        ExecutionTxs,
-        Strategy,
-        Risk,
-    >
+impl<Clock, GlobalData, InstrumentData, ExecutionTxs, Strategy, Risk> CancelOrders
+    for Engine<Clock, EngineState<GlobalData, InstrumentData>, ExecutionTxs, Strategy, Risk>
 where
+    InstrumentData: InFlightRequestRecorder,
     ExecutionTxs: ExecutionTxMap,
 {
     fn cancel_orders(
         &mut self,
         filter: &InstrumentFilter<ExchangeIndex, AssetIndex, InstrumentIndex>,
-    ) -> SendRequestsOutput<ExchangeIndex, InstrumentIndex, RequestCancel> {
+    ) -> SendRequestsOutput<RequestCancel, ExchangeIndex, InstrumentIndex> {
         let requests = self
             .state
             .instruments
-            .filtered(filter)
-            .flat_map(|state| state.orders.orders().filter_map(Order::to_request_cancel));
+            .orders(filter)
+            .flat_map(|state| state.orders().filter_map(Order::to_request_cancel));
 
         // Bypass risk checks...
 

@@ -1,5 +1,5 @@
-use serde::{de::DeserializeOwned, Serialize};
-use std::{fmt::Debug, time::Duration};
+use serde::{Serialize, de::DeserializeOwned};
+use std::time::Duration;
 
 /// Configurable [`client::RestClient`] capable of executing signed [`RestRequest`]s and parsing
 /// responses.
@@ -11,7 +11,7 @@ const DEFAULT_HTTP_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 /// Http REST request that can be executed by a [`RestClient`](self::client::RestClient).
 pub trait RestRequest {
     /// Expected response type if this request was successful.
-    type Response: DeserializeOwned + Debug;
+    type Response: DeserializeOwned;
 
     /// Serialisable query parameters type - use unit struct () if not required for this request.
     type QueryParams: Serialize;

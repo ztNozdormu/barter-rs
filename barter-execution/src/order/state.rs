@@ -1,7 +1,7 @@
 use crate::{error::OrderError, order::id::OrderId};
 use barter_instrument::{
-    asset::{name::AssetNameExchange, AssetIndex},
-    instrument::{name::InstrumentNameExchange, InstrumentIndex},
+    asset::{AssetIndex, name::AssetNameExchange},
+    instrument::{InstrumentIndex, name::InstrumentNameExchange},
 };
 use chrono::{DateTime, Utc};
 use derive_more::{Constructor, From};
@@ -40,6 +40,22 @@ impl<AssetKey, InstrumentKey> OrderState<AssetKey, InstrumentKey> {
     pub fn expired() -> Self {
         Self::Inactive(InactiveOrderState::Expired)
     }
+
+    pub fn time_exchange(&self) -> Option<DateTime<Utc>> {
+        match self {
+            Self::Active(active) => match active {
+                ActiveOrderState::OpenInFlight(_) => None,
+                ActiveOrderState::Open(state) => Some(state.time_exchange),
+                ActiveOrderState::CancelInFlight(state) => {
+                    state.order.as_ref().map(|order| order.time_exchange)
+                }
+            },
+            Self::Inactive(inactive) => match inactive {
+                InactiveOrderState::Cancelled(state) => Some(state.time_exchange),
+                _ => None,
+            },
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize, From)]
@@ -50,19 +66,12 @@ pub enum ActiveOrderState {
 }
 
 impl ActiveOrderState {
-    pub fn order_id(&self) -> Option<OrderId> {
+    pub fn open_meta(&self) -> Option<&Open> {
         match self {
-            ActiveOrderState::OpenInFlight(_) => None,
-            ActiveOrderState::Open(state) => Some(state.id.clone()),
-            ActiveOrderState::CancelInFlight(state) => state.id.clone(),
+            Self::OpenInFlight(_) => None,
+            Self::Open(open) => Some(open),
+            Self::CancelInFlight(cancel) => cancel.order.as_ref(),
         }
-    }
-
-    pub fn is_open_or_in_flight(&self) -> bool {
-        matches!(
-            self,
-            ActiveOrderState::OpenInFlight(_) | ActiveOrderState::Open(_)
-        )
     }
 }
 
@@ -75,29 +84,27 @@ pub struct OpenInFlight;
 pub struct Open {
     pub id: OrderId,
     pub time_exchange: DateTime<Utc>,
-    pub price: Decimal,
-    pub quantity: Decimal,
     pub filled_quantity: Decimal,
 }
 
 impl Open {
-    pub fn quantity_remaining(&self) -> Decimal {
-        self.quantity - self.filled_quantity
+    pub fn quantity_remaining(&self, initial_quantity: Decimal) -> Decimal {
+        initial_quantity - self.filled_quantity
     }
 }
 
 #[derive(
-    Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize, Constructor,
+    Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default, Deserialize, Serialize, Constructor,
 )]
 pub struct CancelInFlight {
-    pub id: Option<OrderId>,
+    pub order: Option<Open>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize, From)]
 pub enum InactiveOrderState<AssetKey, InstrumentKey> {
     Cancelled(Cancelled),
     FullyFilled,
-    Failed(OrderError<AssetKey, InstrumentKey>),
+    OpenFailed(OrderError<AssetKey, InstrumentKey>),
     Expired,
 }
 

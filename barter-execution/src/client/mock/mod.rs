@@ -1,17 +1,18 @@
 use crate::{
+    UnindexedAccountEvent, UnindexedAccountSnapshot,
     balance::AssetBalance,
     client::ExecutionClient,
-    error::{UnindexedClientError, UnindexedOrderError},
+    error::{ConnectivityError, UnindexedClientError, UnindexedOrderError},
     exchange::mock::request::MockExchangeRequest,
     order::{
-        state::{Cancelled, Open},
-        Order, RequestCancel, RequestOpen,
+        Order, OrderEvent, OrderKey,
+        request::{OrderRequestCancel, OrderRequestOpen, UnindexedOrderResponseCancel},
+        state::Open,
     },
     trade::Trade,
-    UnindexedAccountEvent, UnindexedAccountSnapshot,
 };
 use barter_instrument::{
-    asset::{name::AssetNameExchange, QuoteAsset},
+    asset::{QuoteAsset, name::AssetNameExchange},
     exchange::ExchangeId,
     instrument::name::InstrumentNameExchange,
 };
@@ -19,11 +20,14 @@ use chrono::{DateTime, Utc};
 use derive_more::Constructor;
 use futures::stream::BoxStream;
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, oneshot};
-use tokio_stream::{wrappers::BroadcastStream, StreamExt};
+use tokio_stream::{StreamExt, wrappers::BroadcastStream};
 use tracing::error;
 
-#[derive(Debug, Clone, Constructor)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize, Constructor,
+)]
 pub struct MockExecutionConfig {
     pub mocked_exchange: ExchangeId,
     pub initial_state: UnindexedAccountSnapshot,
@@ -32,16 +36,21 @@ pub struct MockExecutionConfig {
 }
 
 #[derive(Debug, Constructor)]
-pub struct MockExecutionClientConfig {
+pub struct MockExecutionClientConfig<FnTime> {
     pub mocked_exchange: ExchangeId,
+    pub clock: FnTime,
     pub request_tx: mpsc::UnboundedSender<MockExchangeRequest>,
     pub event_rx: broadcast::Receiver<UnindexedAccountEvent>,
 }
 
-impl Clone for MockExecutionClientConfig {
+impl<FnTime> Clone for MockExecutionClientConfig<FnTime>
+where
+    FnTime: Clone,
+{
     fn clone(&self) -> Self {
         Self {
             mocked_exchange: self.mocked_exchange,
+            clock: self.clock.clone(),
             request_tx: self.request_tx.clone(),
             event_rx: self.event_rx.resubscribe(),
         }
@@ -49,37 +58,48 @@ impl Clone for MockExecutionClientConfig {
 }
 
 #[derive(Debug, Constructor)]
-pub struct MockExecution {
+pub struct MockExecution<FnTime> {
     pub mocked_exchange: ExchangeId,
+    pub clock: FnTime,
     pub request_tx: mpsc::UnboundedSender<MockExchangeRequest>,
     pub event_rx: broadcast::Receiver<UnindexedAccountEvent>,
 }
 
-impl Clone for MockExecution {
+impl<FnTime> Clone for MockExecution<FnTime>
+where
+    FnTime: Clone,
+{
     fn clone(&self) -> Self {
         Self {
             mocked_exchange: self.mocked_exchange,
+            clock: self.clock.clone(),
             request_tx: self.request_tx.clone(),
             event_rx: self.event_rx.resubscribe(),
         }
     }
 }
 
-impl MockExecution {
+impl<FnTime> MockExecution<FnTime>
+where
+    FnTime: Fn() -> DateTime<Utc>,
+{
     pub fn time_request(&self) -> DateTime<Utc> {
-        // Todo: use input time_engine from requests once this is added
-        Utc::now()
+        (self.clock)()
     }
 }
 
-impl ExecutionClient for MockExecution {
+impl<FnTime> ExecutionClient for MockExecution<FnTime>
+where
+    FnTime: Fn() -> DateTime<Utc> + Clone + Sync,
+{
     const EXCHANGE: ExchangeId = ExchangeId::Mock;
-    type Config = MockExecutionClientConfig;
+    type Config = MockExecutionClientConfig<FnTime>;
     type AccountStream = BoxStream<'static, UnindexedAccountEvent>;
 
     fn new(config: Self::Config) -> Self {
         Self {
             mocked_exchange: config.mocked_exchange,
+            clock: config.clock,
             request_tx: config.request_tx,
             event_rx: config.event_rx,
         }
@@ -97,13 +117,17 @@ impl ExecutionClient for MockExecution {
                 self.time_request(),
                 response_tx,
             ))
-            .expect("MockExchange is offline - failed to send request");
+            .map_err(|_| {
+                UnindexedClientError::Connectivity(ConnectivityError::ExchangeOffline(
+                    self.mocked_exchange,
+                ))
+            })?;
 
-        let snapshot = response_rx
-            .await
-            .expect("MockExchange if offline - failed to receive response");
-
-        Ok(snapshot)
+        response_rx.await.map_err(|_| {
+            UnindexedClientError::Connectivity(ConnectivityError::ExchangeOffline(
+                self.mocked_exchange,
+            ))
+        })
     }
 
     async fn account_stream(
@@ -127,8 +151,8 @@ impl ExecutionClient for MockExecution {
 
     async fn cancel_order(
         &self,
-        request: Order<ExchangeId, &InstrumentNameExchange, RequestCancel>,
-    ) -> Order<ExchangeId, InstrumentNameExchange, Result<Cancelled, UnindexedOrderError>> {
+        request: OrderRequestCancel<ExchangeId, &InstrumentNameExchange>,
+    ) -> UnindexedOrderResponseCancel {
         let (response_tx, response_rx) = oneshot::channel();
 
         self.request_tx
@@ -146,7 +170,7 @@ impl ExecutionClient for MockExecution {
 
     async fn open_order(
         &self,
-        request: Order<ExchangeId, &InstrumentNameExchange, RequestOpen>,
+        request: OrderRequestOpen<ExchangeId, &InstrumentNameExchange>,
     ) -> Order<ExchangeId, InstrumentNameExchange, Result<Open, UnindexedOrderError>> {
         let (response_tx, response_rx) = oneshot::channel();
 
@@ -173,13 +197,17 @@ impl ExecutionClient for MockExecution {
                 self.time_request(),
                 response_tx,
             ))
-            .expect("MockExchange is offline - failed to send request");
+            .map_err(|_| {
+                UnindexedClientError::Connectivity(ConnectivityError::ExchangeOffline(
+                    self.mocked_exchange,
+                ))
+            })?;
 
-        let balances = response_rx
-            .await
-            .expect("MockExchange if offline - failed to receive response");
-
-        Ok(balances)
+        response_rx.await.map_err(|_| {
+            UnindexedClientError::Connectivity(ConnectivityError::ExchangeOffline(
+                self.mocked_exchange,
+            ))
+        })
     }
 
     async fn fetch_open_orders(
@@ -192,13 +220,17 @@ impl ExecutionClient for MockExecution {
                 self.time_request(),
                 response_tx,
             ))
-            .expect("MockExchange is offline - failed to send request");
+            .map_err(|_| {
+                UnindexedClientError::Connectivity(ConnectivityError::ExchangeOffline(
+                    self.mocked_exchange,
+                ))
+            })?;
 
-        let open_orders = response_rx
-            .await
-            .expect("MockExchange if offline - failed to receive response");
-
-        Ok(open_orders)
+        response_rx.await.map_err(|_| {
+            UnindexedClientError::Connectivity(ConnectivityError::ExchangeOffline(
+                self.mocked_exchange,
+            ))
+        })
     }
 
     async fn fetch_trades(
@@ -213,34 +245,41 @@ impl ExecutionClient for MockExecution {
                 response_tx,
                 time_since,
             ))
-            .expect("MockExchange is offline - failed to send request");
+            .map_err(|_| {
+                UnindexedClientError::Connectivity(ConnectivityError::ExchangeOffline(
+                    self.mocked_exchange,
+                ))
+            })?;
 
-        let trades = response_rx
-            .await
-            .expect("MockExchange if offline - failed to receive response");
-
-        Ok(trades)
+        response_rx.await.map_err(|_| {
+            UnindexedClientError::Connectivity(ConnectivityError::ExchangeOffline(
+                self.mocked_exchange,
+            ))
+        })
     }
 }
 
 fn into_owned_request<Kind>(
-    request: Order<ExchangeId, &InstrumentNameExchange, Kind>,
-) -> Order<ExchangeId, InstrumentNameExchange, Kind> {
-    let Order {
-        exchange,
-        instrument,
-        strategy,
-        cid,
-        side,
+    request: OrderEvent<Kind, ExchangeId, &InstrumentNameExchange>,
+) -> OrderEvent<Kind, ExchangeId, InstrumentNameExchange> {
+    let OrderEvent {
+        key:
+            OrderKey {
+                exchange,
+                instrument,
+                strategy,
+                cid,
+            },
         state,
     } = request;
 
-    Order {
-        exchange,
-        instrument: instrument.clone(),
-        strategy,
-        cid,
-        side,
+    OrderEvent {
+        key: OrderKey {
+            exchange,
+            instrument: instrument.clone(),
+            strategy,
+            cid,
+        },
         state,
     }
 }

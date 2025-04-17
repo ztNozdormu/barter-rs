@@ -10,8 +10,8 @@ use crate::{
 };
 use barter_execution::balance::AssetBalance;
 use barter_instrument::{
-    asset::{name::AssetNameInternal, AssetIndex, ExchangeAsset},
-    instrument::{name::InstrumentNameInternal, InstrumentIndex},
+    asset::{AssetIndex, ExchangeAsset, name::AssetNameInternal},
+    instrument::{InstrumentIndex, name::InstrumentNameInternal},
 };
 use barter_integration::{collection::FnvIndexMap, snapshot::Snapshot};
 use chrono::{DateTime, TimeDelta, Utc};
@@ -92,11 +92,11 @@ pub struct TradingSummaryGenerator {
 impl TradingSummaryGenerator {
     /// Initialise a [`TradingSummaryGenerator`] from a `risk_free_return` value, and initial
     /// indexed state.
-    pub fn init<Market>(
+    pub fn init<InstrumentData>(
         risk_free_return: Decimal,
         time_engine_start: DateTime<Utc>,
         time_engine_now: DateTime<Utc>,
-        instruments: &InstrumentStates<Market>,
+        instruments: &InstrumentStates<InstrumentData>,
         assets: &AssetStates,
     ) -> Self {
         Self {
@@ -109,7 +109,7 @@ impl TradingSummaryGenerator {
                 .map(|state| {
                     (
                         state.instrument.name_internal.clone(),
-                        state.statistics.clone(),
+                        state.tear_sheet.clone(),
                     )
                 })
                 .collect(),

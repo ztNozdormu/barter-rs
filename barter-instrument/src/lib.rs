@@ -111,17 +111,18 @@ impl Display for Side {
 
 pub mod test_utils {
     use crate::{
+        Underlying,
         asset::{
-            name::{AssetNameExchange, AssetNameInternal},
             Asset, ExchangeAsset,
+            name::{AssetNameExchange, AssetNameInternal},
         },
         exchange::ExchangeId,
         instrument::{
+            Instrument,
             kind::InstrumentKind,
             name::{InstrumentNameExchange, InstrumentNameInternal},
-            Instrument,
+            quote::InstrumentQuoteAsset,
         },
-        Underlying,
     };
 
     pub fn exchange_asset(exchange: ExchangeId, symbol: &str) -> ExchangeAsset<Asset> {
@@ -154,6 +155,7 @@ pub mod test_utils {
             name_internal,
             name_exchange,
             Underlying::new(base_asset, quote_asset),
+            InstrumentQuoteAsset::UnderlyingQuote,
             InstrumentKind::Spot,
             None,
         )

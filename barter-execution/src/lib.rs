@@ -23,13 +23,18 @@
 //!
 //! See `README.md` for more information and examples.
 
-use crate::{balance::AssetBalance, order::Order, trade::Trade};
+use crate::{
+    balance::AssetBalance,
+    order::{Order, OrderSnapshot, request::OrderResponseCancel},
+    trade::Trade,
+};
 use barter_instrument::{
-    asset::{name::AssetNameExchange, AssetIndex, QuoteAsset},
+    asset::{AssetIndex, QuoteAsset, name::AssetNameExchange},
     exchange::{ExchangeId, ExchangeIndex},
-    instrument::{name::InstrumentNameExchange, InstrumentIndex},
+    instrument::{InstrumentIndex, name::InstrumentNameExchange},
 };
 use barter_integration::snapshot::Snapshot;
+use chrono::{DateTime, Utc};
 use derive_more::{Constructor, From};
 use order::state::OrderState;
 use serde::{Deserialize, Serialize};
@@ -85,8 +90,11 @@ pub enum AccountEventKind<ExchangeKey, AssetKey, InstrumentKey> {
 
     /// Single [`Order`] snapshot - used to upsert existing order state if it's more recent.
     ///
-    /// This variant covers cancel & open order responses, as well as general order updates.
+    /// This variant covers general order updates, and open order responses.
     OrderSnapshot(Snapshot<Order<ExchangeKey, InstrumentKey, OrderState<AssetKey, InstrumentKey>>>),
+
+    /// Response to an [`OrderRequestCancel<ExchangeKey, InstrumentKey>`].
+    OrderCancelled(OrderResponseCancel<ExchangeKey, AssetKey, InstrumentKey>),
 
     /// [`Order<ExchangeKey, InstrumentKey, Open>`] partial or full-fill.
     Trade(Trade<QuoteAsset, InstrumentKey>),
@@ -98,10 +106,9 @@ where
     InstrumentKey: Eq,
 {
     pub fn snapshot(self) -> Option<AccountSnapshot<ExchangeKey, AssetKey, InstrumentKey>> {
-        if let AccountEventKind::Snapshot(snapshot) = self.kind {
-            Some(snapshot)
-        } else {
-            None
+        match self.kind {
+            AccountEventKind::Snapshot(snapshot) => Some(snapshot),
+            _ => None,
         }
     }
 }
@@ -128,10 +135,23 @@ pub struct InstrumentAccountSnapshot<
     InstrumentKey = InstrumentIndex,
 > {
     pub instrument: InstrumentKey,
-    pub orders: Vec<Order<ExchangeKey, InstrumentKey, OrderState<AssetKey, InstrumentKey>>>,
+    #[serde(default = "Vec::new")]
+    pub orders: Vec<OrderSnapshot<ExchangeKey, AssetKey, InstrumentKey>>,
 }
 
 impl<ExchangeKey, AssetKey, InstrumentKey> AccountSnapshot<ExchangeKey, AssetKey, InstrumentKey> {
+    pub fn time_most_recent(&self) -> Option<DateTime<Utc>> {
+        let order_times = self.instruments.iter().flat_map(|instrument| {
+            instrument
+                .orders
+                .iter()
+                .filter_map(|order| order.state.time_exchange())
+        });
+        let balance_times = self.balances.iter().map(|balance| balance.time_exchange);
+
+        order_times.chain(balance_times).max()
+    }
+
     pub fn assets(&self) -> impl Iterator<Item = &AssetKey> {
         self.balances.iter().map(|balance| &balance.asset)
     }

@@ -54,11 +54,11 @@ impl MarketDataInstrument {
 #[cfg(test)]
 mod tests {
     use crate::instrument::{
-        kind::{
-            future::FutureContract,
-            option::{OptionContract, OptionExercise, OptionKind},
+        kind::option::{OptionExercise, OptionKind},
+        market_data::{
+            MarketDataInstrument,
+            kind::{MarketDataFutureContract, MarketDataInstrumentKind, MarketDataOptionContract},
         },
-        market_data::{kind::MarketDataInstrumentKind, MarketDataInstrument},
     };
     use chrono::{TimeZone, Utc};
     use rust_decimal_macros::dec;
@@ -90,7 +90,7 @@ mod tests {
                 expected: Ok(MarketDataInstrument::new(
                     "btc",
                     "usd",
-                    MarketDataInstrumentKind::Future(FutureContract {
+                    MarketDataInstrumentKind::Future(MarketDataFutureContract {
                         expiry: Utc.timestamp_millis_opt(1703980800000).unwrap(),
                     }),
                 )),
@@ -121,7 +121,7 @@ mod tests {
                 expected: Ok(MarketDataInstrument::from((
                     "btc",
                     "usd",
-                    MarketDataInstrumentKind::Option(OptionContract {
+                    MarketDataInstrumentKind::Option(MarketDataOptionContract {
                         kind: OptionKind::Call,
                         exercise: OptionExercise::American,
                         expiry: Utc.timestamp_millis_opt(1703980800000).unwrap(),
@@ -146,7 +146,7 @@ mod tests {
                 expected: Ok(MarketDataInstrument::from((
                     "btc",
                     "usd",
-                    MarketDataInstrumentKind::Option(OptionContract {
+                    MarketDataInstrumentKind::Option(MarketDataOptionContract {
                         kind: OptionKind::Put,
                         exercise: OptionExercise::Bermudan,
                         expiry: Utc.timestamp_millis_opt(1703980800000).unwrap(),
@@ -168,7 +168,9 @@ mod tests {
                 }
                 (actual, expected) => {
                     // Test failed
-                    panic!("TC{index} failed because actual != expected. \nActual: {actual:?}\nExpected: {expected:?}\n");
+                    panic!(
+                        "TC{index} failed because actual != expected. \nActual: {actual:?}\nExpected: {expected:?}\n"
+                    );
                 }
             }
         }

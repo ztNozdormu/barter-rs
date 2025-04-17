@@ -1,22 +1,20 @@
 use barter::{
     engine::state::{
-        instrument::market_data::DefaultMarketData, position::PositionExited,
-        trading::TradingState, EngineState,
+        EngineState, global::DefaultGlobalData, instrument::data::DefaultInstrumentMarketData,
+        position::PositionExited, trading::TradingState,
     },
-    risk::DefaultRiskManagerState,
     statistic::{summary::TradingSummaryGenerator, time::Annual365},
-    strategy::DefaultStrategyState,
 };
 use barter_execution::{
     balance::{AssetBalance, Balance},
     trade::{AssetFees, TradeId},
 };
 use barter_instrument::{
+    Side, Underlying,
     asset::{AssetIndex, QuoteAsset},
     exchange::ExchangeId,
     index::IndexedInstruments,
-    instrument::{kind::InstrumentKind, Instrument, InstrumentIndex},
-    Side, Underlying,
+    instrument::{Instrument, InstrumentIndex},
 };
 use barter_integration::snapshot::Snapshot;
 use chrono::{DateTime, Days, Utc};
@@ -53,20 +51,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let time_now = Utc::now();
 
     // Construct EngineState from IndexedInstruments and hard-coded exchange asset Balances
-    let state =
-        EngineState::<DefaultMarketData, DefaultStrategyState, DefaultRiskManagerState>::builder(
-            &instruments,
-        )
-        .time_engine_start(time_now)
-        // Note: you may want to start to engine with TradingState::Disabled and turn on later
-        .trading_state(TradingState::Enabled)
-        .balances([
-            (EXCHANGE, "usdt", STARTING_BALANCE_USDT),
-            (EXCHANGE, "btc", STARTING_BALANCE_BTC),
-            (EXCHANGE, "eth", STARTING_BALANCE_ETH),
-        ])
-        // Note: can add other initial data via this builder (eg/ exchange asset balances)
-        .build();
+    let state = EngineState::builder(
+        &instruments,
+        DefaultGlobalData::default(),
+        DefaultInstrumentMarketData::default,
+    )
+    .time_engine_start(time_now)
+    // Note: you may want to start to engine with TradingState::Disabled and turn on later
+    .trading_state(TradingState::Enabled)
+    .balances([
+        (EXCHANGE, "usdt", STARTING_BALANCE_USDT),
+        (EXCHANGE, "btc", STARTING_BALANCE_BTC),
+        (EXCHANGE, "eth", STARTING_BALANCE_ETH),
+    ])
+    // Note: can add other initial data via this builder (eg/ exchange asset balances)
+    .build();
 
     // Initialise TradingSummaryGenerator for all indexed instruments & assets
     // Note: EngineState already contains Instrument & Asset TearSheets
@@ -102,20 +101,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn indexed_instruments() -> IndexedInstruments {
     IndexedInstruments::builder()
-        .add_instrument(Instrument::new(
+        .add_instrument(Instrument::spot(
             ExchangeId::BinanceSpot,
             "binance_spot_btc_usdt",
             "BTCUSDT",
             Underlying::new("btc", "usdt"),
-            InstrumentKind::Spot,
             None,
         ))
-        .add_instrument(Instrument::new(
+        .add_instrument(Instrument::spot(
             ExchangeId::BinanceSpot,
             "binance_spot_eth_usdt",
             "ETHUSDT",
             Underlying::new("eth", "usdt"),
-            InstrumentKind::Spot,
             None,
         ))
         .build()

@@ -1,9 +1,9 @@
 use crate::{
-    asset::{name::AssetNameInternal, Asset, AssetIndex, ExchangeAsset},
+    Keyed,
+    asset::{Asset, AssetIndex, ExchangeAsset, name::AssetNameInternal},
     exchange::{ExchangeId, ExchangeIndex},
     index::{builder::IndexedInstrumentsBuilder, error::IndexError},
-    instrument::{name::InstrumentNameInternal, Instrument, InstrumentIndex},
-    Keyed,
+    instrument::{Instrument, InstrumentIndex, name::InstrumentNameInternal},
 };
 use serde::{Deserialize, Serialize};
 
@@ -44,14 +44,15 @@ impl IndexedInstruments {
     /// could invalidate existing index lookup tables).
     ///
     /// For incremental initialisation, see the [`IndexedInstrumentsBuilder`].
-    pub fn new<Iter>(instruments: Iter) -> Self
+    pub fn new<Iter, I>(instruments: Iter) -> Self
     where
-        Iter: IntoIterator<Item = Instrument<ExchangeId, Asset>>,
+        Iter: IntoIterator<Item = I>,
+        I: Into<Instrument<ExchangeId, Asset>>,
     {
         instruments
             .into_iter()
             .fold(Self::builder(), |builder, instrument| {
-                builder.add_instrument(instrument)
+                builder.add_instrument(instrument.into())
             })
             .build()
     }
@@ -169,6 +170,18 @@ impl IndexedInstruments {
     }
 }
 
+impl<I> FromIterator<I> for IndexedInstruments
+where
+    I: Into<Instrument<ExchangeId, Asset>>,
+{
+    fn from_iter<Iter>(iter: Iter) -> Self
+    where
+        Iter: IntoIterator<Item = I>,
+    {
+        Self::new(iter)
+    }
+}
+
 fn find_exchange_by_exchange_id(
     haystack: &[Keyed<ExchangeIndex, ExchangeId>],
     needle: &ExchangeId,
@@ -205,17 +218,19 @@ mod tests {
     use super::*;
 
     use crate::{
+        Underlying,
         asset::Asset,
         exchange::ExchangeId,
-        instrument::{kind::InstrumentKind, name::InstrumentNameExchange},
+        instrument::{
+            kind::InstrumentKind, name::InstrumentNameExchange, quote::InstrumentQuoteAsset,
+        },
         test_utils::{exchange_asset, instrument},
-        Underlying,
     };
 
     #[test]
     fn test_indexed_instruments_new() {
         // Test creating empty IndexedInstruments
-        let empty = IndexedInstruments::new(std::iter::empty());
+        let empty = IndexedInstruments::new(std::iter::empty::<Instrument<ExchangeId, Asset>>());
         assert!(empty.exchanges().is_empty());
         assert!(empty.assets().is_empty());
         assert!(empty.instruments().is_empty());
@@ -252,6 +267,7 @@ mod tests {
                     base: AssetIndex(0),
                     quote: AssetIndex(1),
                 },
+                quote: InstrumentQuoteAsset::UnderlyingQuote,
                 kind: InstrumentKind::Spot,
                 spec: None
             }
@@ -305,15 +321,21 @@ mod tests {
         let indexed = IndexedInstruments::new(instruments);
 
         // Test finding existing assets
-        assert!(indexed
-            .find_asset_index(ExchangeId::BinanceSpot, &AssetNameInternal::from("btc"))
-            .is_ok());
-        assert!(indexed
-            .find_asset_index(ExchangeId::BinanceSpot, &AssetNameInternal::from("usdt"))
-            .is_ok());
-        assert!(indexed
-            .find_asset_index(ExchangeId::Coinbase, &AssetNameInternal::from("eth"))
-            .is_ok());
+        assert!(
+            indexed
+                .find_asset_index(ExchangeId::BinanceSpot, &AssetNameInternal::from("btc"))
+                .is_ok()
+        );
+        assert!(
+            indexed
+                .find_asset_index(ExchangeId::BinanceSpot, &AssetNameInternal::from("usdt"))
+                .is_ok()
+        );
+        assert!(
+            indexed
+                .find_asset_index(ExchangeId::Coinbase, &AssetNameInternal::from("eth"))
+                .is_ok()
+        );
 
         // Test finding asset with wrong exchange
         let err = indexed
@@ -342,9 +364,11 @@ mod tests {
         let btc_usdt = InstrumentNameInternal::from("binance_spot-btc_usdt");
 
         // Test finding existing instruments
-        assert!(indexed
-            .find_instrument_index(ExchangeId::BinanceSpot, &btc_usdt)
-            .is_ok());
+        assert!(
+            indexed
+                .find_instrument_index(ExchangeId::BinanceSpot, &btc_usdt)
+                .is_ok()
+        );
 
         // Test finding instrument with wrong exchange
         let err = indexed
