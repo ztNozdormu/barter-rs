@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+tracing = "0.1.41"
+listen-tracing ={ git = "https://github.com/ztNozdormu/listen-tracing", branch = "main", version = "0.1.0"}
