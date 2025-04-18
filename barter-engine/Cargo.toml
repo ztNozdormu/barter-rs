@@ -4,5 +4,20 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# Barter Ecosystem
+barter = { path = "../barter", version = "0.12.0" }
+barter-instrument = { workspace = true }
+barter-data = { workspace = true }
+barter-execution = { workspace = true }
 tracing = "0.1.41"
 listen-tracing ={ git = "https://github.com/ztNozdormu/listen-tracing", branch = "main", version = "0.1.0"}
+rust_decimal_macros = { workspace = true }
+chrono = "0.4.40"
+futures = "0.3.31"
+itertools = "0.14.0"
+tokio = "1.44.2"
+serde_json = "1.0.140"
+
+# Data Structures
+smol_str = { workspace = true }
+rust_decimal = { workspace = true }
