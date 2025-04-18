@@ -8,7 +8,7 @@ members = [
     "barter-macro", 
     "barter-instrument",
     "barter-xchange"
-]
+, "barter-engine"]
 
 [workspace.dependencies]
 # Barter Ecosystem
