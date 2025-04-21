@@ -1,5 +1,5 @@
-mod strategy;
-mod data;
+pub(crate) mod strategy;
+pub mod data;
 
 use barter::{
     EngineEvent,

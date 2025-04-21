@@ -1,1 +1,1 @@
-mod trendst;
+pub(crate) mod trendst;

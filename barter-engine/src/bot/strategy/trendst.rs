@@ -3,7 +3,7 @@ use barter_data::event::MarketEvent;
 use barter_execution::{
     order::{
         id::{ClientOrderId, StrategyId},
-        Order, OrderKind, RequestCancel, RequestOpen, TimeInForce,
+        Order, OrderKind, TimeInForce,
     },
     AccountEvent,
 };
@@ -34,9 +34,9 @@ use barter::strategy::on_trading_disabled::OnTradingDisabled;
 use barter_execution::order::OrderKey;
 use barter_execution::order::request::{OrderRequestCancel, OrderRequestOpen};
 use crate::bot::data::trend_data::TrendStrategyInstrumentData;
-use crate::bot::StrategyA;
+use crate::bot::{MultiStrategy, StrategyA};
 
-struct TrendStrategy{
+pub(crate) struct TrendStrategy{
     pub id: StrategyId,
 }
 
@@ -124,47 +124,69 @@ impl ClosePositionsStrategy for TrendStrategy {
     }
 }
 
-impl
-OnDisconnectStrategy<
-    HistoricalClock,
-    EngineState<DefaultGlobalData, TrendStrategyInstrumentData>,
-    MultiExchangeTxMap,
-    DefaultRiskManager<EngineState<DefaultGlobalData, TrendStrategyInstrumentData>>,
-> for TrendStrategy
+// impl
+// OnDisconnectStrategy<
+//     HistoricalClock,
+//     EngineState<DefaultGlobalData, TrendStrategyInstrumentData>,
+//     MultiExchangeTxMap,
+//     DefaultRiskManager<EngineState<DefaultGlobalData, TrendStrategyInstrumentData>>,
+// > for TrendStrategy
+// {
+//     type OnDisconnect = ();
+//
+//     fn on_disconnect(
+//         _: &mut Engine<
+//             HistoricalClock,
+//             EngineState<DefaultGlobalData, TrendStrategyInstrumentData>,
+//             MultiExchangeTxMap,
+//             Self,
+//             DefaultRiskManager<EngineState<DefaultGlobalData, TrendStrategyInstrumentData>>,
+//         >,
+//         _: ExchangeId,
+//     ) -> Self::OnDisconnect {
+//     }
+// }
+//
+// impl OnTradingDisabled<
+//     HistoricalClock,
+//     EngineState<DefaultGlobalData, TrendStrategyInstrumentData>,
+//     MultiExchangeTxMap,
+//     DefaultRiskManager<EngineState<DefaultGlobalData, TrendStrategyInstrumentData>>,
+// > for TrendStrategy
+// {
+//     type OnTradingDisabled = ();
+//
+//     fn on_trading_disabled(
+//         _: &mut Engine<
+//             HistoricalClock,
+//             EngineState<DefaultGlobalData, TrendStrategyInstrumentData>,
+//             MultiExchangeTxMap,
+//             Self,
+//             DefaultRiskManager<EngineState<DefaultGlobalData, TrendStrategyInstrumentData>>,
+//         >,
+//     ) -> Self::OnTradingDisabled {
+//     }
+// }
+
+impl<Clock, State, ExecutionTxs, Risk> OnDisconnectStrategy<Clock, State, ExecutionTxs, Risk>
+for TrendStrategy
 {
     type OnDisconnect = ();
 
     fn on_disconnect(
-        _: &mut Engine<
-            HistoricalClock,
-            EngineState<DefaultGlobalData, TrendStrategyInstrumentData>,
-            MultiExchangeTxMap,
-            Self,
-            DefaultRiskManager<EngineState<DefaultGlobalData, TrendStrategyInstrumentData>>,
-        >,
+        _: &mut Engine<Clock, State, ExecutionTxs, Self, Risk>,
         _: ExchangeId,
     ) -> Self::OnDisconnect {
     }
 }
 
-impl
-OnTradingDisabled<
-    HistoricalClock,
-    EngineState<DefaultGlobalData, TrendStrategyInstrumentData>,
-    MultiExchangeTxMap,
-    DefaultRiskManager<EngineState<DefaultGlobalData, TrendStrategyInstrumentData>>,
-> for TrendStrategy
+impl<Clock, State, ExecutionTxs, Risk> OnTradingDisabled<Clock, State, ExecutionTxs, Risk>
+for TrendStrategy
 {
     type OnTradingDisabled = ();
 
     fn on_trading_disabled(
-        _: &mut Engine<
-            HistoricalClock,
-            EngineState<DefaultGlobalData, TrendStrategyInstrumentData>,
-            MultiExchangeTxMap,
-            Self,
-            DefaultRiskManager<EngineState<DefaultGlobalData, TrendStrategyInstrumentData>>,
-        >,
+        _: &mut Engine<Clock, State, ExecutionTxs, Self, Risk>,
     ) -> Self::OnTradingDisabled {
     }
 }
