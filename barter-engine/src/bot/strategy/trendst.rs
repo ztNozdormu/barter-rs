@@ -79,7 +79,7 @@ impl AlgoStrategy for TrendStrategy {
             let klines = &state.data.market_data.klines;
             info!("{klines:?}");
             return None;
-            // Generate Market order to buy the minimum allowed quantity
+            // TODO Generate Market order to buy the minimum allowed quantity
             // Some(OrderRequestOpen {
             //     key: OrderKey {
             //         exchange: state.instrument.exchange,
