@@ -44,19 +44,20 @@ use barter_execution::{
         request::{OrderRequestCancel, OrderRequestOpen},
     },
 };
-use barter_instrument::{
-    asset::AssetIndex,
-    exchange::{ExchangeId, ExchangeIndex},
-    index::IndexedInstruments,
-    instrument::InstrumentIndex,
-};
+use barter_instrument::{asset::AssetIndex, exchange::{ExchangeId, ExchangeIndex}, index::IndexedInstruments, instrument::InstrumentIndex, Underlying};
 use chrono::{DateTime, Utc};
 use futures::StreamExt;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use smol_str::SmolStr;
 use std::{fs::File, io::BufReader, time::Duration};
-use tracing::debug;
+use tracing::{debug, info};
+use barter_instrument::asset::{Asset, QuoteAsset};
+use barter_instrument::instrument::Instrument;
+use barter_instrument::instrument::kind::InstrumentKind;
+use barter_instrument::instrument::kind::perpetual::PerpetualContract;
+use barter_instrument::instrument::quote::InstrumentQuoteAsset;
+use barter_instrument::instrument::spec::{InstrumentSpec, InstrumentSpecNotional, InstrumentSpecPrice, InstrumentSpecQuantity, OrderQuantityUnits};
 use crate::bot::data::trend_data::TrendStrategyInstrumentData;
 use crate::bot::strategy::trendst::TrendStrategy;
 
@@ -68,6 +69,7 @@ pub(crate) async fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Initialise Tracing
     init_logging();
 
+
     // Load SystemConfig
     let SystemConfig {
         instruments,
@@ -76,6 +78,7 @@ pub(crate) async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     // Construct IndexedInstruments
     let instruments = IndexedInstruments::new(instruments);
+
 
     // Initialise MarketData Stream
     let market_stream = init_indexed_multi_exchange_market_stream(
@@ -159,3 +162,66 @@ fn load_config() -> Result<SystemConfig, Box<dyn std::error::Error>> {
     let config = serde_json::from_reader(reader)?;
     Ok(config)
 }
+
+fn gen_config_json() -> Result<String, Box<dyn std::error::Error>> {
+    let instrumentss = indexed_instruments();
+    info!("IndexedInstruments: {}", serde_json::to_string_pretty(&instrumentss).unwrap_or_else(|e| format!("Error serializing: {}", e)));
+}
+    // Get indexed instruments
+    fn indexed_instruments() -> IndexedInstruments {
+        // instruments
+        IndexedInstruments::builder()
+            .add_instrument(Instrument::new(
+                ExchangeId::BinanceFuturesUsd,
+                "binance_perpetual_btc_usdt",
+                "BTCUSDT",
+                Underlying::new("btc", "usdt"),
+                InstrumentQuoteAsset::UnderlyingQuote,
+                InstrumentKind::Perpetual (PerpetualContract { contract_size: Default::default(), settlement_asset: Asset::from("btc") }),
+                Some(InstrumentSpec::new(
+                    InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
+                    InstrumentSpecQuantity::new(
+                        OrderQuantityUnits::Quote,
+                        dec!(0.00001),
+                        dec!(0.00001),
+                    ),
+                    InstrumentSpecNotional::new(dec!(5.0)),
+                )),
+            ))
+            .add_instrument(Instrument::new(
+                ExchangeId::BinanceFuturesUsd,
+                "binance_perpetual_eth_usdt",
+                "ETHUSDT",
+                Underlying::new("eth", "usdt"),
+                InstrumentQuoteAsset::UnderlyingQuote,
+                InstrumentKind::Perpetual (PerpetualContract { contract_size: Default::default(), settlement_asset: Asset::from("eth") }),
+                Some(InstrumentSpec::new(
+                    InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
+                    InstrumentSpecQuantity::new(
+                        OrderQuantityUnits::Quote,
+                        dec!(0.00001),
+                        dec!(0.00001),
+                    ),
+                    InstrumentSpecNotional::new(dec!(5.0)),
+                )),
+            ))
+            .add_instrument(Instrument::new(
+                ExchangeId::BinanceFuturesUsd,
+                "binance_perpetual_sol_usdt",
+                "SOLUSDT",
+                Underlying::new("sol", "usdt"),
+                InstrumentQuoteAsset::UnderlyingQuote,
+                InstrumentKind::Perpetual (PerpetualContract { contract_size: Default::default(), settlement_asset: Asset::from("sol") }),
+                Some(InstrumentSpec::new(
+                    InstrumentSpecPrice::new(dec!(0.01), dec!(0.01)),
+                    InstrumentSpecQuantity::new(
+                        OrderQuantityUnits::Quote,
+                        dec!(0.00001),
+                        dec!(0.00001),
+                    ),
+                    InstrumentSpecNotional::new(dec!(5.0)),
+                )),
+            ))
+            .build()
+
+    }
