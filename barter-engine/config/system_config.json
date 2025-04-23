@@ -1,44 +1,58 @@
 {
-  "risk_free_return": 0.05,
   "instruments": [
     {
-      "exchange": "binance_spot",
+      "exchange": "binance_futures_usd",
       "name_exchange": "BTCUSDT",
       "underlying": {
         "base": "btc",
         "quote": "usdt"
       },
       "quote": "underlying_quote",
-      "kind": "spot"
+      "kind": {
+        "perpetual": {
+          "contract_size": "0",
+          "settlement_asset": "btc"
+        }
+      }
     },
     {
-      "exchange": "binance_spot",
+      "exchange": "binance_futures_usd",
       "name_exchange": "ETHUSDT",
       "underlying": {
         "base": "eth",
         "quote": "usdt"
       },
       "quote": "underlying_quote",
-      "kind": "spot"
+      "kind": {
+        "perpetual": {
+          "contract_size": "0",
+          "settlement_asset": "eth"
+        }
+      }
     },
     {
-      "exchange": "binance_spot",
+      "exchange": "binance_futures_usd",
       "name_exchange": "SOLUSDT",
       "underlying": {
         "base": "sol",
         "quote": "usdt"
       },
       "quote": "underlying_quote",
-      "kind": "spot"
+      "kind": {
+        "perpetual": {
+          "contract_size": "0",
+          "settlement_asset": "sol"
+        }
+      }
     }
   ],
   "executions": [
     {
-      "mocked_exchange": "binance_spot",
+      "mocked_exchange": "binance_futures_usd",
       "latency_ms": 100,
       "fees_percent": 0.05,
       "initial_state": {
-        "exchange": "binance_spot",
+        "exchange": "binance_futures_usd",
         "balances": [
           {
             "asset": "usdt",

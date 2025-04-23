@@ -60,7 +60,7 @@ use smol_str::SmolStr;
 use std::{fs::File, io::BufReader, time::Duration};
 use tracing::debug;
 
-const FILE_PATH_SYSTEM_CONFIG: &str = "barter-engine/config/system_config.json";
+const FILE_PATH_SYSTEM_CONFIG: &str = "barter-engine/config/system_config_per.json";
 const RISK_FREE_RETURN: Decimal = dec!(0.05);
 
 struct MultiStrategy {

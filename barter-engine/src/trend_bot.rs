@@ -69,14 +69,19 @@ pub(crate) async fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Initialise Tracing
     init_logging();
 
-
+    // gen_config_json();
     // Load SystemConfig
     let SystemConfig {
         instruments,
         executions,
     } = load_config()?;
 
-    // Construct IndexedInstruments
+    // match load_config() {
+    //     Ok(config) => println!("{:?}", config),
+    //     Err(e) => println!("Error loading config: {}", e),
+    // }
+    //
+    // // Construct IndexedInstruments
     let instruments = IndexedInstruments::new(instruments);
 
 
@@ -141,17 +146,17 @@ pub(crate) async fn run() -> Result<(), Box<dyn std::error::Error>> {
     system.cancel_orders(InstrumentFilter::None);
     system.close_positions(InstrumentFilter::None);
 
-    // // Shutdown
-    // let (engine, _shutdown_audit) = system.shutdown().await?;
-    // let _audit_stream = audit_task.await?;
-    //
-    // // Generate TradingSummary<Daily>
-    // let trading_summary = engine
-    //     .trading_summary_generator(RISK_FREE_RETURN)
-    //     .generate(Daily);
-    //
-    // // Print TradingSummary<Daily> to terminal (could save in a file, send somewhere, etc.)
-    // trading_summary.print_summary();
+    // Shutdown
+    let (engine, _shutdown_audit) = system.shutdown().await?;
+    let _audit_stream = audit_task.await?;
+
+    // Generate TradingSummary<Daily>
+    let trading_summary = engine
+        .trading_summary_generator(RISK_FREE_RETURN)
+        .generate(Daily);
+
+    // Print TradingSummary<Daily> to terminal (could save in a file, send somewhere, etc.)
+    trading_summary.print_summary();
 
     Ok(())
 }
@@ -159,11 +164,13 @@ pub(crate) async fn run() -> Result<(), Box<dyn std::error::Error>> {
 fn load_config() -> Result<SystemConfig, Box<dyn std::error::Error>> {
     let file = File::open(FILE_PATH_SYSTEM_CONFIG)?;
     let reader = BufReader::new(file);
+
     let config = serde_json::from_reader(reader)?;
+
     Ok(config)
 }
 
-fn gen_config_json() -> Result<String, Box<dyn std::error::Error>> {
+fn gen_config_json() {
     let instrumentss = indexed_instruments();
     info!("IndexedInstruments: {}", serde_json::to_string_pretty(&instrumentss).unwrap_or_else(|e| format!("Error serializing: {}", e)));
 }
