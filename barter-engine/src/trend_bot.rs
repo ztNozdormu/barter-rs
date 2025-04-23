@@ -147,16 +147,16 @@ pub(crate) async fn run() -> Result<(), Box<dyn std::error::Error>> {
     system.close_positions(InstrumentFilter::None);
 
     // Shutdown
-    let (engine, _shutdown_audit) = system.shutdown().await?;
+    // let (engine, _shutdown_audit) = system.shutdown().await?;
     let _audit_stream = audit_task.await?;
 
     // Generate TradingSummary<Daily>
-    let trading_summary = engine
-        .trading_summary_generator(RISK_FREE_RETURN)
-        .generate(Daily);
-
-    // Print TradingSummary<Daily> to terminal (could save in a file, send somewhere, etc.)
-    trading_summary.print_summary();
+    // let trading_summary = engine
+    //     .trading_summary_generator(RISK_FREE_RETURN)
+    //     .generate(Daily);
+    //
+    // // Print TradingSummary<Daily> to terminal (could save in a file, send somewhere, etc.)
+    // trading_summary.print_summary();
 
     Ok(())
 }

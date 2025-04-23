@@ -77,7 +77,9 @@ impl AlgoStrategy for TrendStrategy {
             // info!("{last_kline:?}");
 
             let klines = &state.data.market_data.klines;
-            info!("{klines:?}");
+            if(klines.len() > 1){
+                info!("{klines:?}");
+            }
             return None;
             // TODO Generate Market order to buy the minimum allowed quantity
             // Some(OrderRequestOpen {
