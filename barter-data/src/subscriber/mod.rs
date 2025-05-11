@@ -1,3 +1,4 @@
+use std::fmt;
 use self::{
     mapper::{SubscriptionMapper, WebSocketSubMapper},
     validator::SubscriptionValidator,
@@ -42,13 +43,22 @@ pub trait Subscriber {
             Identifier<Exchange::Channel> + Identifier<Exchange::Market>;
 }
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct Subscribed<InstrumentKey> {
     pub websocket: WebSocket,
     pub map: Map<InstrumentKey>,
     pub buffered_websocket_events: Vec<WsMessage>,
 }
 
+impl<InstrumentKey: fmt::Debug> fmt::Debug for Subscribed<InstrumentKey> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Subscribed")
+            .field("websocket", &"DynWebSocket") // 不能直接打印 dyn 类型，打印占位说明
+            .field("map", &self.map)
+            .field("buffered_websocket_events", &self.buffered_websocket_events)
+            .finish()
+    }
+}
 /// Standard [`Subscriber`] for [`WebSocket`]s suitable for most exchanges.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
 pub struct WebSocketSubscriber;

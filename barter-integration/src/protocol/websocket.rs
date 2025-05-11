@@ -3,8 +3,9 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 use std::sync::Arc;
-use futures::{SinkExt, StreamExt};
+use futures::{Sink, SinkExt, Stream, StreamExt};
 use rustls::{ClientConfig, RootCertStore};
+use rustls::crypto::CryptoProvider;
 use tokio::net::TcpStream;
 use tokio_socks::tcp::Socks5Stream;
 use tokio_tungstenite::{MaybeTlsStream, connect_async, tungstenite::{
@@ -18,10 +19,27 @@ use tracing::debug;
 use url::Url;
 use webpki_roots::TLS_SERVER_ROOTS;
 
-/// Convenient type alias for a tungstenite `WebSocketStream`.
-pub type WebSocket = tokio_tungstenite::WebSocketStream<MaybeTlsStream<TcpStream>>;
 
-pub type SocksWebSocket = tokio_tungstenite::WebSocketStream<MaybeTlsStream<Socks5Stream<TcpStream>>>;
+// 定义组合 trait
+pub trait WebSocketStreamExt:
+Stream<Item = tungstenite::Result<Message>>
++ Sink<Message, Error = tokio_tungstenite::tungstenite::Error>
++ Unpin
++ Send
+{}
+
+impl<T> WebSocketStreamExt for T where
+    T: Stream<Item = tungstenite::Result<Message>>
+    + Sink<Message, Error = tokio_tungstenite::tungstenite::Error>
+    + Unpin
+    + Send
+{}
+
+/// Convenient type alias for a tungstenite `WebSocketStream`.
+// pub type WebSocket = WebSocketStream<MaybeTlsStream<TcpStream>>;
+
+// 定义 trait object 类型别名
+pub type WebSocket = Box<dyn WebSocketStreamExt>;
 
 /// Convenient type alias for the `Sink` half of a tungstenite [`WebSocket`].
 pub type WsSink = futures::stream::SplitSink<WebSocket, WsMessage>;
@@ -34,27 +52,6 @@ pub type WsMessage = tokio_tungstenite::tungstenite::Message;
 
 /// Communicative type alias for a tungstenite [`WebSocket`] `Error`.
 pub type WsError = tokio_tungstenite::tungstenite::Error;
-
-pub enum UnifiedWebSocket {
-    Direct(WebSocketStream<MaybeTlsStream<TcpStream>>),
-    Proxied(WebSocketStream<MaybeTlsStream<Socks5Stream<TcpStream>>>),
-}
-
-impl UnifiedWebSocket {
-    pub async fn next(&mut self) -> Option<tungstenite::Result<Message>> {
-        match self {
-            UnifiedWebSocket::Direct(ws) => ws.next().await,
-            UnifiedWebSocket::Proxied(ws) => ws.next().await,
-        }
-    }
-
-    pub async fn send(&mut self, msg: Message) -> tungstenite::Result<()> {
-        match self {
-            UnifiedWebSocket::Direct(ws) => ws.send(msg).await,
-            UnifiedWebSocket::Proxied(ws) => ws.send(msg).await,
-        }
-    }
-}
 
 
 
@@ -164,24 +161,31 @@ pub fn process_frame<ExchangeMessage>(
     None
 }
 
-
-// pub async fn connect(ws_url: &str) -> anyhow::Result<UnifiedWebSocket> {
-pub async fn connect_via_socks5<R> (
+/// Connect asynchronously to a [`WebSocket`] server.
+pub async fn connect<R> (
     request: R
-) -> Result<UnifiedWebSocket, SocketError>
+) -> Result<WebSocket, SocketError>
 where
     R: IntoClientRequest + Unpin + Debug,
 {
+    // rustls 0.23+ 全局仅执行一次 CryptoProvider 初始化
+    static INIT: std::sync::Once = std::sync::Once::new();
+    INIT.call_once(|| {
+        rustls::crypto::ring::default_provider()
+            .install_default()
+            .expect("Failed to install ring crypto provider");
+    });
+
     let req = request.into_client_request()?;
     let proxy_addr = "127.0.0.1:8888"; // 本地运行的 SOCKS5 代理地址
     let uri = req.uri();
     let url = Url::parse(&uri.to_string()).map_err(|err| SocketError::UrlParse(err))?;
-
     // 尝试直连
     if let Ok((stream, _)) = connect_async(&url).await {
-        return Ok(UnifiedWebSocket::Direct(stream));
+        return Ok(Box::new(stream));
     }
 
+    // 若失败，则尝试通过 SOCKS5 代理连接
     // 自动推导 target_host
     let host = uri.host().ok_or("fstream.binance.com").expect("websocket host set error");
     let port = uri
@@ -202,60 +206,9 @@ where
 
     let (stream, _) = client_async_tls_with_config(url, socks_stream, None, Some(tls_connector)).await?;
 
-    Ok(UnifiedWebSocket::Proxied(stream))
+    Ok(Box::new(stream))
 }
 
-
-
-/// Connect asynchronously to a [`WebSocket`] server.
-pub async fn connect<R>(request: R) -> Result<WebSocket, SocketError>
-where
-    R: IntoClientRequest + Unpin + Debug,
-{
-    debug!(?request, "attempting to establish WebSocket connection");
-    connect_async(request)
-        .await
-        .map(|(websocket, _)| websocket)
-        .map_err(SocketError::WebSocket)
-}
-
-/// Unified WebSocket connection function that supports optional SOCKS5 proxy.
-// pub async fn connect_via_socks5<R> (
-//     request: R
-// ) -> Result<SocksWebSocket, SocketError>
-// where
-//     R: IntoClientRequest + Unpin + Debug,
-// {
-//     let req = request.into_client_request()?;
-//     let proxy_addr = "127.0.0.1:8888"; // 本地运行的 SOCKS5 代理地址
-//     let uri = req.uri();
-//     let url = Url::parse(&uri.to_string()).map_err(|err| SocketError::UrlParse(err))?;
-//
-//     // 自动推导 target_host
-//     let host = uri.host().ok_or("fstream.binance.com")?;
-//     let port = uri
-//         .port_u16()
-//         .unwrap_or_else(|| if uri.scheme_str() == Some("wss") { 443 } else { 80 });
-//     let target_host = (host, port);
-//
-//     // 1. 建立 SOCKS5 代理 TCP 流
-//     let socks_stream = Socks5Stream::<TcpStream>::connect(proxy_addr, target_host).await?;
-//
-//     // 2. 构造 TLS connector
-//     let mut root_store = RootCertStore::empty();
-//     root_store.extend(TLS_SERVER_ROOTS.iter().cloned());
-//
-//     let tls_config = ClientConfig::builder()
-//         .with_root_certificates(root_store)
-//         .with_no_client_auth();
-//
-//     let tls_connector = Connector::Rustls(Arc::new(tls_config));
-//
-//     // 3. 完成 WebSocket 握手
-//     let (ws_stream, _) = client_async_tls_with_config(url, socks_stream, None, Some(tls_connector)).await?;
-//
-//     Ok(ws_stream)
-// }
 
 /// Determine whether a [`WsError`] indicates the [`WebSocket`] has disconnected.
 pub fn is_websocket_disconnected(error: &WsError) -> bool {
