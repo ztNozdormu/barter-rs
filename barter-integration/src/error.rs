@@ -44,6 +44,9 @@ pub enum SocketError {
     #[error("WebSocket error: {0}")]
     WebSocket(#[from] tokio_tungstenite::tungstenite::Error),
 
+    #[error("WebSocksSocket error: {0}")]
+    WebSocksSocket(#[from] tokio_socks::Error),
+
     #[error("HTTP error: {0}")]
     Http(reqwest::Error),
 
