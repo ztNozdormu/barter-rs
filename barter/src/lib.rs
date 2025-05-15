@@ -93,6 +93,8 @@ pub use barter_data;
 
 pub use barter_instrument;
 
+pub use barter_integration;
+
 pub use barter_execution;
 
 pub use barter_xchange;

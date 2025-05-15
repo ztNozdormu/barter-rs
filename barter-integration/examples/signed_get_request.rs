@@ -13,6 +13,7 @@ use reqwest::{RequestBuilder, StatusCode};
 use serde::Deserialize;
 use std::borrow::Cow;
 use thiserror::Error;
+use tracing::info;
 
 struct FtxSigner {
     api_key: String,
@@ -152,8 +153,9 @@ async fn main() {
     let rest_client = RestClient::new("https://ftx.com", request_signer, FtxParser);
 
     // Fetch Result<FetchBalancesResponse, ExecutionError>
-    let _response: Result<
+    let response: Result<
         (FetchBalancesResponse, barter_integration::metric::Metric),
         ExecutionError,
     > = rest_client.execute(FetchBalancesRequest).await;
+    info!("response: {:}", response.is_ok());
 }
