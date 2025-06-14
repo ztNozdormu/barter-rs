@@ -29,7 +29,6 @@ barter-integration = { workspace = true }
 barter-instrument = { workspace = true }
 barter-data = { workspace = true }
 barter-execution = { workspace = true }
-barter-xchange = { workspace = true }
 rust_decimal_macros = { workspace = true }
 
 # Logging

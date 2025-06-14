@@ -89,15 +89,7 @@ pub mod backtest;
 /// Traits and types related to component shutdowns.
 pub mod shutdown;
 
-pub use barter_data;
 
-pub use barter_instrument;
-
-pub use barter_integration;
-
-pub use barter_execution;
-
-pub use barter_xchange;
 
 /// A timed value.
 #[derive(
